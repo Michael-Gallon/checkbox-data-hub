@@ -17,11 +17,11 @@ interface EncodingFormProps {
 
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
+  const [campus, setCampus] = useState("");
   const [clientType, setClientType] = useState<string[]>([]);
   const [sex, setSex] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
   const [office, setOffice] = useState("");
-  const [rowNumber, setRowNumber] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   const [services, setServices] = useState("");
   const [comments, setComments] = useState("");
@@ -44,11 +44,11 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
     const formData: FormData = {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
+      campus,
       clientType,
       sex,
       ageGroup,
       office,
-      rowNumber,
       documentNumber,
       services,
       comments,
@@ -75,11 +75,11 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   };
 
   const resetForm = () => {
+    setCampus("");
     setClientType([]);
     setSex("");
     setAgeGroup("");
     setOffice("");
-    setRowNumber("");
     setDocumentNumber("");
     setServices("");
     setComments("");
@@ -103,6 +103,39 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6 bg-card rounded-lg shadow-lg">
       <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="campus">Campus</Label>
+          <Select value={campus} onValueChange={setCampus}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select campus" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border border-border">
+              <SelectItem value="Sorsogon City Campus">Sorsogon City Campus</SelectItem>
+              <SelectItem value="Bulan Campus">Bulan Campus</SelectItem>
+              <SelectItem value="Magallanes Campus">Magallanes Campus</SelectItem>
+              <SelectItem value="Castilla Campus">Castilla Campus</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="office">Office</Label>
+          <Select value={office} onValueChange={setOffice}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select office" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border border-border">
+              <SelectItem value="ICT">ICT</SelectItem>
+              <SelectItem value="HR">HR</SelectItem>
+              <SelectItem value="Finance">Finance</SelectItem>
+              <SelectItem value="Operations">Operations</SelectItem>
+              <SelectItem value="Did not answer">Did not answer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
         <MultiCheckboxGroup
           label="Client Type"
           options={["C", "B", "G", "Did not answer"]}
@@ -125,32 +158,6 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
         />
 
         <div className="space-y-2">
-          <Label htmlFor="office">Office</Label>
-          <Select value={office} onValueChange={setOffice}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select office" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border border-border">
-              <SelectItem value="ICT">ICT</SelectItem>
-              <SelectItem value="HR">HR</SelectItem>
-              <SelectItem value="Finance">Finance</SelectItem>
-              <SelectItem value="Operations">Operations</SelectItem>
-              <SelectItem value="Did not answer">Did not answer</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="rowNumber">Row Number</Label>
-          <Input
-            id="rowNumber"
-            type="number"
-            value={rowNumber}
-            onChange={(e) => setRowNumber(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="documentNumber">Document Number</Label>
           <Input
             id="documentNumber"
@@ -159,25 +166,6 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
             onChange={(e) => setDocumentNumber(e.target.value)}
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="services">Services</Label>
-        <Input
-          id="services"
-          value={services}
-          onChange={(e) => setServices(e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="comments">Comments/Suggestions</Label>
-        <Textarea
-          id="comments"
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
-          rows={4}
-        />
       </div>
 
       <div className="border-t border-border pt-6 space-y-4">
@@ -227,6 +215,25 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
             };
             setters[field]?.(value);
           }}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="services">Services</Label>
+        <Input
+          id="services"
+          value={services}
+          onChange={(e) => setServices(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="comments">Comments/Suggestions</Label>
+        <Textarea
+          id="comments"
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          rows={4}
         />
       </div>
 

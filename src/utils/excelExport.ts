@@ -5,11 +5,11 @@ export const exportToExcel = (data: FormData[]) => {
   const worksheet = XLSX.utils.json_to_sheet(
     data.map((entry) => ({
       'Date/Time': new Date(entry.timestamp).toLocaleString(),
+      'Campus': entry.campus,
       'Client Type': entry.clientType.join(', '),
       'Sex': entry.sex,
       'Age Group': entry.ageGroup,
       'Office': entry.office,
-      'Row Number': entry.rowNumber,
       'Document Number': entry.documentNumber,
       'Services': entry.services,
       'Comments/Suggestions': entry.comments,
