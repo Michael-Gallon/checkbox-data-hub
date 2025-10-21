@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiCheckboxGroup } from "./MultiCheckboxGroup";
 import { CheckboxGroup } from "./CheckboxGroup";
+import { SQDTable } from "./SQDTable";
 import { useToast } from "@/hooks/use-toast";
 import { FormData } from "@/types/form";
 
@@ -187,15 +188,33 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
 
       <div className="border-t border-border pt-6 space-y-4">
         <h3 className="text-lg font-semibold">Service Quality Dimensions (SQD)</h3>
-        <CheckboxGroup label="SQD0" options={sqdOptions} value={sqd0} onChange={setSqd0} allowColumnClick />
-        <CheckboxGroup label="SQD1" options={sqdOptions} value={sqd1} onChange={setSqd1} allowColumnClick />
-        <CheckboxGroup label="SQD2" options={sqdOptions} value={sqd2} onChange={setSqd2} allowColumnClick />
-        <CheckboxGroup label="SQD3" options={sqdOptions} value={sqd3} onChange={setSqd3} allowColumnClick />
-        <CheckboxGroup label="SQD4" options={sqdOptions} value={sqd4} onChange={setSqd4} allowColumnClick />
-        <CheckboxGroup label="SQD5" options={sqdOptions} value={sqd5} onChange={setSqd5} allowColumnClick />
-        <CheckboxGroup label="SQD6" options={sqdOptions} value={sqd6} onChange={setSqd6} allowColumnClick />
-        <CheckboxGroup label="SQD7" options={sqdOptions} value={sqd7} onChange={setSqd7} allowColumnClick />
-        <CheckboxGroup label="SQD8" options={sqdOptions} value={sqd8} onChange={setSqd8} allowColumnClick />
+        <SQDTable
+          values={{
+            sqd0,
+            sqd1,
+            sqd2,
+            sqd3,
+            sqd4,
+            sqd5,
+            sqd6,
+            sqd7,
+            sqd8,
+          }}
+          onChange={(field, value) => {
+            const setters: { [key: string]: (value: string) => void } = {
+              sqd0: setSqd0,
+              sqd1: setSqd1,
+              sqd2: setSqd2,
+              sqd3: setSqd3,
+              sqd4: setSqd4,
+              sqd5: setSqd5,
+              sqd6: setSqd6,
+              sqd7: setSqd7,
+              sqd8: setSqd8,
+            };
+            setters[field]?.(value);
+          }}
+        />
       </div>
 
       <Button type="submit" className="w-full" size="lg">
