@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiCheckboxGroup } from "./MultiCheckboxGroup";
 import { CheckboxGroup } from "./CheckboxGroup";
 import { SQDTable } from "./SQDTable";
+import { CCTable } from "./CCTable";
 import { useToast } from "@/hooks/use-toast";
 import { FormData } from "@/types/form";
 
@@ -181,9 +182,21 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
 
       <div className="border-t border-border pt-6 space-y-4">
         <h3 className="text-lg font-semibold">Citizen's Charter (CC)</h3>
-        <CheckboxGroup label="CC1" options={ccOptions} value={cc1} onChange={setCc1} allowColumnClick />
-        <CheckboxGroup label="CC2" options={ccOptions} value={cc2} onChange={setCc2} allowColumnClick />
-        <CheckboxGroup label="CC3" options={ccOptions} value={cc3} onChange={setCc3} allowColumnClick />
+        <CCTable
+          values={{
+            cc1,
+            cc2,
+            cc3,
+          }}
+          onChange={(field, value) => {
+            const setters: { [key: string]: (value: string) => void } = {
+              cc1: setCc1,
+              cc2: setCc2,
+              cc3: setCc3,
+            };
+            setters[field]?.(value);
+          }}
+        />
       </div>
 
       <div className="border-t border-border pt-6 space-y-4">
