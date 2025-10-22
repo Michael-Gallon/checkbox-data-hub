@@ -1,19 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MultiCheckboxGroup } from "./MultiCheckboxGroup";
 import { CheckboxGroup } from "./CheckboxGroup";
 import { SQDTable } from "./SQDTable";
 import { CCTable } from "./CCTable";
 import { useToast } from "@/hooks/use-toast";
 import { FormData } from "@/types/form";
+import { Settings, X, Plus } from "lucide-react";
 
 interface EncodingFormProps {
   onSubmit: (data: FormData) => void;
 }
+
+const DEFAULT_OFFICE_OPTIONS = ["ICT", "HR", "Finance", "Operations", "Did not answer"];
 
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
@@ -37,6 +41,46 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const [sqd6, setSqd6] = useState("SA");
   const [sqd7, setSqd7] = useState("SA");
   const [sqd8, setSqd8] = useState("SA");
+  
+  const [officeOptions, setOfficeOptions] = useState<string[]>(DEFAULT_OFFICE_OPTIONS);
+  const [newOffice, setNewOffice] = useState("");
+  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const savedOptions = localStorage.getItem("officeOptions");
+    if (savedOptions) {
+      setOfficeOptions(JSON.parse(savedOptions));
+    }
+  }, []);
+
+  const saveOfficeOptions = (options: string[]) => {
+    setOfficeOptions(options);
+    localStorage.setItem("officeOptions", JSON.stringify(options));
+  };
+
+  const handleAddOffice = () => {
+    if (newOffice.trim() && !officeOptions.includes(newOffice.trim())) {
+      const updated = [...officeOptions, newOffice.trim()];
+      saveOfficeOptions(updated);
+      setNewOffice("");
+      toast({
+        title: "Success",
+        description: "Office option added",
+      });
+    }
+  };
+
+  const handleDeleteOffice = (optionToDelete: string) => {
+    const updated = officeOptions.filter(opt => opt !== optionToDelete);
+    saveOfficeOptions(updated);
+    if (office === optionToDelete) {
+      setOffice("");
+    }
+    toast({
+      title: "Success",
+      description: "Office option removed",
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,17 +162,65 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="office">Office</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="office">Office</Label>
+            <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 px-2">
+                  <Settings className="h-3 w-3" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Manage Office Options</DialogTitle>
+                  <DialogDescription>
+                    Add or remove office options from the dropdown.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="New office name"
+                      value={newOffice}
+                      onChange={(e) => setNewOffice(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddOffice()}
+                    />
+                    <Button onClick={handleAddOffice} size="sm">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {officeOptions.map((option) => (
+                      <div
+                        key={option}
+                        className="flex items-center justify-between p-2 rounded-md bg-muted"
+                      >
+                        <span className="text-sm">{option}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteOffice(option)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           <Select value={office} onValueChange={setOffice}>
             <SelectTrigger>
               <SelectValue placeholder="Select office" />
             </SelectTrigger>
-            <SelectContent className="bg-background border border-border">
-              <SelectItem value="ICT">ICT</SelectItem>
-              <SelectItem value="HR">HR</SelectItem>
-              <SelectItem value="Finance">Finance</SelectItem>
-              <SelectItem value="Operations">Operations</SelectItem>
-              <SelectItem value="Did not answer">Did not answer</SelectItem>
+            <SelectContent className="bg-background border border-border z-50">
+              {officeOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
