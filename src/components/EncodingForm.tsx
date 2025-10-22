@@ -100,8 +100,8 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const sqdOptions = ["SD", "D", "ND", "A", "SA", "NA"];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6 bg-card rounded-lg shadow-lg">
-      <div className="grid gap-6 md:grid-cols-2">
+    <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4 max-w-7xl mx-auto p-3 lg:p-4 bg-card rounded-lg shadow-lg h-full lg:overflow-y-auto">
+      <div className="grid gap-3 lg:gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="campus">Campus</Label>
           <Select value={campus} onValueChange={setCampus}>
@@ -134,7 +134,7 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-3 lg:gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MultiCheckboxGroup
           label="Client Type"
           options={["C", "B", "G", "Did not answer"]}
@@ -163,12 +163,13 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
             type="number"
             value={documentNumber}
             onChange={(e) => setDocumentNumber(e.target.value)}
+            className="h-9"
           />
         </div>
       </div>
 
-      <div className="border-t border-border pt-6 space-y-4">
-        <h3 className="text-lg font-semibold">Citizen's Charter (CC)</h3>
+      <div className="border-t border-border pt-3 lg:pt-4 space-y-2 lg:space-y-3">
+        <h3 className="text-base lg:text-lg font-semibold">Citizen's Charter (CC)</h3>
         <CCTable
           values={{
             cc1,
@@ -186,8 +187,8 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
         />
       </div>
 
-      <div className="border-t border-border pt-6 space-y-4">
-        <h3 className="text-lg font-semibold">Service Quality Dimensions (SQD)</h3>
+      <div className="border-t border-border pt-3 lg:pt-4 space-y-2 lg:space-y-3">
+        <h3 className="text-base lg:text-lg font-semibold">Service Quality Dimensions (SQD)</h3>
         <SQDTable
           values={{
             sqd0,
@@ -217,26 +218,30 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="services">Services</Label>
-        <Input
-          id="services"
-          value={services}
-          onChange={(e) => setServices(e.target.value)}
-        />
+      <div className="grid gap-3 lg:gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="services">Services</Label>
+          <Input
+            id="services"
+            value={services}
+            onChange={(e) => setServices(e.target.value)}
+            className="h-9"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="comments">Comments/Suggestions</Label>
+          <Textarea
+            id="comments"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            rows={2}
+            className="resize-none"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="comments">Comments/Suggestions</Label>
-        <Textarea
-          id="comments"
-          value={comments}
-          onChange={(e) => setComments(e.target.value)}
-          rows={4}
-        />
-      </div>
-
-      <Button type="submit" className="w-full" size="lg">
+      <Button type="submit" className="w-full h-9 lg:h-10" size="lg">
         Submit
       </Button>
     </form>

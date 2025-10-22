@@ -22,18 +22,19 @@ export const CheckboxGroup = ({ label, options, value, onChange, allowColumnClic
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-semibold text-foreground">{label}</Label>
-      <div className="flex gap-4 flex-wrap">
+      <Label className="text-xs lg:text-sm font-semibold text-foreground">{label}</Label>
+      <div className="flex gap-2 lg:gap-3 flex-wrap">
         {options.map((option) => (
-          <div key={option} className="flex items-center space-x-2">
+          <div key={option} className="flex items-center space-x-1.5">
             <Checkbox
               id={`${label}-${option}`}
               checked={value === option}
               onCheckedChange={() => handleCheckboxChange(option)}
+              className="h-4 w-4"
             />
             <label
               htmlFor={`${label}-${option}`}
-              className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+              className={`text-xs lg:text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
                 allowColumnClick && option !== "NA" ? "cursor-pointer hover:text-primary" : ""
               }`}
               onClick={() => allowColumnClick && handleColumnHeaderClick(option)}
