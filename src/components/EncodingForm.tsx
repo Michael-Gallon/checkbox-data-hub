@@ -17,26 +17,26 @@ interface EncodingFormProps {
 
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
-  const [campus, setCampus] = useState("");
-  const [clientType, setClientType] = useState<string[]>([]);
-  const [sex, setSex] = useState("");
-  const [ageGroup, setAgeGroup] = useState("");
+  const [campus, setCampus] = useState("Sorsogon City Campus");
+  const [clientType, setClientType] = useState<string[]>(["C"]);
+  const [sex, setSex] = useState("Male");
+  const [ageGroup, setAgeGroup] = useState("19-B");
   const [office, setOffice] = useState("");
-  const [documentNumber, setDocumentNumber] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("0");
   const [services, setServices] = useState("");
   const [comments, setComments] = useState("");
-  const [cc1, setCc1] = useState("");
-  const [cc2, setCc2] = useState("");
-  const [cc3, setCc3] = useState("");
-  const [sqd0, setSqd0] = useState("");
-  const [sqd1, setSqd1] = useState("");
-  const [sqd2, setSqd2] = useState("");
-  const [sqd3, setSqd3] = useState("");
-  const [sqd4, setSqd4] = useState("");
-  const [sqd5, setSqd5] = useState("");
-  const [sqd6, setSqd6] = useState("");
-  const [sqd7, setSqd7] = useState("");
-  const [sqd8, setSqd8] = useState("");
+  const [cc1, setCc1] = useState("1");
+  const [cc2, setCc2] = useState("1");
+  const [cc3, setCc3] = useState("1");
+  const [sqd0, setSqd0] = useState("SA");
+  const [sqd1, setSqd1] = useState("SA");
+  const [sqd2, setSqd2] = useState("SA");
+  const [sqd3, setSqd3] = useState("SA");
+  const [sqd4, setSqd4] = useState("SA");
+  const [sqd5, setSqd5] = useState("NA");
+  const [sqd6, setSqd6] = useState("SA");
+  const [sqd7, setSqd7] = useState("SA");
+  const [sqd8, setSqd8] = useState("SA");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,26 +75,25 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   };
 
   const resetForm = () => {
-    setCampus("");
-    setClientType([]);
-    setSex("");
-    setAgeGroup("");
-    setOffice("");
-    setDocumentNumber("");
+    // Keep campus and office, reset others to defaults
+    setClientType(["C"]);
+    setSex("Male");
+    setAgeGroup("19-B");
+    setDocumentNumber((prev) => String(Number(prev) + 1));
     setServices("");
     setComments("");
-    setCc1("");
-    setCc2("");
-    setCc3("");
-    setSqd0("");
-    setSqd1("");
-    setSqd2("");
-    setSqd3("");
-    setSqd4("");
-    setSqd5("");
-    setSqd6("");
-    setSqd7("");
-    setSqd8("");
+    setCc1("1");
+    setCc2("1");
+    setCc3("1");
+    setSqd0("SA");
+    setSqd1("SA");
+    setSqd2("SA");
+    setSqd3("SA");
+    setSqd4("SA");
+    setSqd5("NA");
+    setSqd6("SA");
+    setSqd7("SA");
+    setSqd8("SA");
   };
 
   const ccOptions = ["1", "2", "3", "4", "5", "NA"];
