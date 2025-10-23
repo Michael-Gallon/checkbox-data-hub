@@ -22,7 +22,7 @@ const DEFAULT_OFFICE_OPTIONS = ["ICT", "HR", "Finance", "Operations", "Did not a
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
   const [campus, setCampus] = useState("Sorsogon City Campus");
-  const [clientType, setClientType] = useState<string[]>(["C"]);
+  const [clientType, setClientType] = useState("C");
   const [sex, setSex] = useState("Male");
   const [ageGroup, setAgeGroup] = useState("19-B");
   const [office, setOffice] = useState("");
@@ -133,7 +133,7 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
 
   const resetForm = () => {
     // Keep campus and office, reset others to defaults
-    setClientType(["C"]);
+    setClientType("C");
     setSex("Male");
     setAgeGroup("19-B");
     setDocumentNumber((prev) => String(Number(prev) + 1));
@@ -240,10 +240,10 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
       </div>
 
       <div className="grid gap-3 lg:gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MultiCheckboxGroup
+        <CheckboxGroup
           label="Client Type"
           options={["C", "B", "G", "Did not answer"]}
-          values={clientType}
+          value={clientType}
           onChange={setClientType}
         />
 

@@ -6,7 +6,7 @@ export const exportToExcel = (data: FormData[]) => {
     data.map((entry) => ({
       'Date/Time': new Date(entry.timestamp).toLocaleString(),
       'Campus': entry.campus,
-      'Client Type': entry.clientType.join(', '),
+      'Client Type': entry.clientType,
       'Sex': entry.sex,
       'Age Group': entry.ageGroup,
       'Office': entry.office,

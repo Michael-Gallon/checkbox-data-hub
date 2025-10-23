@@ -2,7 +2,7 @@ export interface FormData {
   id: string;
   timestamp: string;
   campus: string;
-  clientType: string[];
+  clientType: string;
   sex: string;
   ageGroup: string;
   office: string;

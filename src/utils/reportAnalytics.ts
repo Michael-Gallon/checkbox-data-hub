@@ -47,9 +47,9 @@ export const analyzeByCampus = (data: FormData[]): CampusMetrics[] => {
     // Client Type Distribution
     const clientTypeDistribution: Record<string, number> = {};
     items.forEach(item => {
-      item.clientType.forEach(type => {
-        clientTypeDistribution[type] = (clientTypeDistribution[type] || 0) + 1;
-      });
+      if (item.clientType) {
+        clientTypeDistribution[item.clientType] = (clientTypeDistribution[item.clientType] || 0) + 1;
+      }
     });
 
     // Sex Distribution
