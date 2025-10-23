@@ -45,11 +45,17 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const [officeOptions, setOfficeOptions] = useState<string[]>(DEFAULT_OFFICE_OPTIONS);
   const [newOffice, setNewOffice] = useState("");
   const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
+  const [servicesHistory, setServicesHistory] = useState<string[]>([]);
 
   useEffect(() => {
     const savedOptions = localStorage.getItem("officeOptions");
     if (savedOptions) {
       setOfficeOptions(JSON.parse(savedOptions));
+    }
+
+    const savedHistory = localStorage.getItem("servicesHistory");
+    if (savedHistory) {
+      setServicesHistory(JSON.parse(savedHistory));
     }
   }, []);
 
@@ -109,6 +115,13 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
       sqd7,
       sqd8,
     };
+
+    // Update services history
+    if (services.trim()) {
+      const updatedHistory = [services.trim(), ...servicesHistory.filter(s => s !== services.trim())].slice(0, 10);
+      setServicesHistory(updatedHistory);
+      localStorage.setItem("servicesHistory", JSON.stringify(updatedHistory));
+    }
 
     onSubmit(formData);
     resetForm();
@@ -255,7 +268,13 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
             value={services}
             onChange={(e) => setServices(e.target.value)}
             className="h-9"
+            list="services-suggestions"
           />
+          <datalist id="services-suggestions">
+            {servicesHistory.map((service, index) => (
+              <option key={index} value={service} />
+            ))}
+          </datalist>
         </div>
       </div>
 
