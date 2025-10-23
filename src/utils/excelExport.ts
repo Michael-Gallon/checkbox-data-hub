@@ -6,13 +6,11 @@ export const exportToExcel = (data: FormData[]) => {
     data.map((entry) => ({
       'Date/Time': new Date(entry.timestamp).toLocaleString(),
       'Campus': entry.campus,
-      'Client Type': entry.clientType,
-      'Sex': entry.sex,
       'Age Group': entry.ageGroup,
+      'Sex': entry.sex,
       'Office': entry.office,
-      'Document Number': entry.documentNumber,
       'Services': entry.services,
-      'Comments/Suggestions': entry.comments,
+      'Client Type': entry.clientType,
       'CC1': entry.cc1,
       'CC2': entry.cc2,
       'CC3': entry.cc3,
@@ -25,6 +23,8 @@ export const exportToExcel = (data: FormData[]) => {
       'SQD6': entry.sqd6,
       'SQD7': entry.sqd7,
       'SQD8': entry.sqd8,
+      'Comments/Suggestions': entry.comments,
+      'Document Number': entry.documentNumber,
     }))
   );
 
