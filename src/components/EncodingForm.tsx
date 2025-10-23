@@ -249,12 +249,11 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
         />
 
         <div className="space-y-2">
-          <Label htmlFor="documentNumber">Document Number</Label>
+          <Label htmlFor="services">Services</Label>
           <Input
-            id="documentNumber"
-            type="number"
-            value={documentNumber}
-            onChange={(e) => setDocumentNumber(e.target.value)}
+            id="services"
+            value={services}
+            onChange={(e) => setServices(e.target.value)}
             className="h-9"
           />
         </div>
@@ -312,11 +311,12 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
 
       <div className="grid gap-3 lg:gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="services">Services</Label>
+          <Label htmlFor="documentNumber">Document Number</Label>
           <Input
-            id="services"
-            value={services}
-            onChange={(e) => setServices(e.target.value)}
+            id="documentNumber"
+            type="number"
+            value={documentNumber}
+            onChange={(e) => setDocumentNumber(e.target.value)}
             className="h-9"
           />
         </div>
