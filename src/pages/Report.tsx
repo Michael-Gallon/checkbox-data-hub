@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Download } from "lucide-react";
 import { FormData } from "@/types/form";
 import { analyzeByCampus, calculateOverallMetrics, CampusMetrics } from "@/utils/reportAnalytics";
-import { DistributionChart, AverageChart, TopServicesChart } from "@/components/ReportCharts";
+import { DistributionChart, AverageChart, TopServicesChart, TimeSeriesChart, SatisfactionComparisonChart, OfficePerformanceChart } from "@/components/ReportCharts";
 
 const Report = () => {
   const navigate = useNavigate();
@@ -285,11 +285,86 @@ const Report = () => {
               </CardContent>
             </Card>
 
+            {/* Statistical Analysis Section */}
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold mb-4 text-primary">Statistical Analysis</h3>
+              
+              {/* Time Series */}
+              {campus.timeSeriesData.length > 0 && (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Trend Analysis</CardTitle>
+                    <CardDescription>Response patterns and satisfaction trends over time</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <TimeSeriesChart data={campus.timeSeriesData} />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Office Performance */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">Office Performance Comparison</CardTitle>
+                  <CardDescription>Response volume and satisfaction metrics by office</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <OfficePerformanceChart data={campus.responseRateByOffice} />
+                </CardContent>
+              </Card>
+
+              {/* Demographic Satisfaction Analysis */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Satisfaction by Client Type</CardTitle>
+                    <CardDescription>Comparing CC and SQD ratings across client categories</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SatisfactionComparisonChart 
+                      data={campus.satisfactionByDemographic.byClientType}
+                      title=""
+                      categoryName="Client Type"
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Satisfaction by Sex</CardTitle>
+                    <CardDescription>Gender-based satisfaction analysis</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SatisfactionComparisonChart 
+                      data={campus.satisfactionByDemographic.bySex}
+                      title=""
+                      categoryName="Sex"
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Satisfaction by Age Group</CardTitle>
+                    <CardDescription>Age-based satisfaction patterns</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SatisfactionComparisonChart 
+                      data={campus.satisfactionByDemographic.byAgeGroup}
+                      title=""
+                      categoryName="Age Group"
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
             {/* Top Services */}
             {campus.topServices.length > 0 && (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="text-lg">Most Requested Services</CardTitle>
+                  <CardDescription>Service utilization patterns</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <TopServicesChart data={campus.topServices} />
@@ -297,15 +372,15 @@ const Report = () => {
               </Card>
             )}
 
-            {/* Comments and Suggestions */}
+            {/* Comments and Suggestions - Show all when office filter is applied */}
             {selectedOffice !== "all" && (
-              <Card>
+              <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="text-lg">Comments & Suggestions</CardTitle>
-                  <CardDescription>Feedback from {selectedOffice}</CardDescription>
+                  <CardDescription>Qualitative feedback from {selectedOffice}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
                     {allData
                       .filter(d => 
                         d.campus === campus.campus && 
@@ -313,9 +388,10 @@ const Report = () => {
                         d.comments.trim() !== ""
                       )
                       .map((entry, idx) => (
-                        <div key={idx} className="border-l-4 border-primary pl-4 py-2">
-                          <div className="text-xs text-muted-foreground mb-1">
-                            {new Date(entry.timestamp).toLocaleDateString()} - {entry.clientType}
+                        <div key={idx} className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r">
+                          <div className="text-xs text-muted-foreground mb-1 flex justify-between">
+                            <span>{new Date(entry.timestamp).toLocaleDateString()} - {entry.clientType}</span>
+                            <span className="font-mono text-xs">{entry.documentNumber}</span>
                           </div>
                           <p className="text-sm">{entry.comments}</p>
                         </div>
@@ -325,7 +401,7 @@ const Report = () => {
                       d.office === selectedOffice && 
                       d.comments.trim() !== ""
                     ).length === 0 && (
-                      <p className="text-sm text-muted-foreground">No comments available for this office.</p>
+                      <p className="text-sm text-muted-foreground text-center py-8">No comments available for this office.</p>
                     )}
                   </div>
                 </CardContent>

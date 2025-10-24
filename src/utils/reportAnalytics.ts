@@ -15,6 +15,13 @@ export interface CampusMetrics {
   sqdDistribution: Record<string, Record<string, number>>;
   sqdAverages: Record<string, number>;
   topServices: Array<{ service: string; count: number }>;
+  timeSeriesData: Array<{ date: string; responses: number; avgCC: number; avgSQD: number }>;
+  satisfactionByDemographic: {
+    byClientType: Record<string, { avgCC: number; avgSQD: number; count: number }>;
+    bySex: Record<string, { avgCC: number; avgSQD: number; count: number }>;
+    byAgeGroup: Record<string, { avgCC: number; avgSQD: number; count: number }>;
+  };
+  responseRateByOffice: Array<{ office: string; count: number; avgCC: number; avgSQD: number }>;
 }
 
 const convertCCToNumber = (value: string): number => {
@@ -123,6 +130,121 @@ export const analyzeByCampus = (data: FormData[]): CampusMetrics[] => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    // Time Series Analysis
+    const timeSeriesMap: Record<string, { count: number; ccSum: number; sqdSum: number }> = {};
+    items.forEach(item => {
+      const dateKey = new Date(item.timestamp).toLocaleDateString();
+      if (!timeSeriesMap[dateKey]) {
+        timeSeriesMap[dateKey] = { count: 0, ccSum: 0, sqdSum: 0 };
+      }
+      
+      const avgCC = (convertCCToNumber(item.cc1) + convertCCToNumber(item.cc2) + convertCCToNumber(item.cc3)) / 3;
+      const sqdValues = sqdKeys.map(key => convertSQDToNumber(item[key as keyof FormData] as string)).filter(v => v > 0);
+      const avgSQD = sqdValues.length > 0 ? sqdValues.reduce((a, b) => a + b, 0) / sqdValues.length : 0;
+      
+      timeSeriesMap[dateKey].count++;
+      timeSeriesMap[dateKey].ccSum += avgCC;
+      timeSeriesMap[dateKey].sqdSum += avgSQD;
+    });
+
+    const timeSeriesData = Object.entries(timeSeriesMap)
+      .map(([date, data]) => ({
+        date,
+        responses: data.count,
+        avgCC: parseFloat((data.ccSum / data.count).toFixed(2)),
+        avgSQD: parseFloat((data.sqdSum / data.count).toFixed(2)),
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Satisfaction by Demographics
+    const byClientType: Record<string, { ccSum: number; sqdSum: number; count: number }> = {};
+    const bySex: Record<string, { ccSum: number; sqdSum: number; count: number }> = {};
+    const byAgeGroup: Record<string, { ccSum: number; sqdSum: number; count: number }> = {};
+    
+    items.forEach(item => {
+      const avgCC = (convertCCToNumber(item.cc1) + convertCCToNumber(item.cc2) + convertCCToNumber(item.cc3)) / 3;
+      const sqdValues = sqdKeys.map(key => convertSQDToNumber(item[key as keyof FormData] as string)).filter(v => v > 0);
+      const avgSQD = sqdValues.length > 0 ? sqdValues.reduce((a, b) => a + b, 0) / sqdValues.length : 0;
+
+      if (!byClientType[item.clientType]) {
+        byClientType[item.clientType] = { ccSum: 0, sqdSum: 0, count: 0 };
+      }
+      byClientType[item.clientType].ccSum += avgCC;
+      byClientType[item.clientType].sqdSum += avgSQD;
+      byClientType[item.clientType].count++;
+
+      if (!bySex[item.sex]) {
+        bySex[item.sex] = { ccSum: 0, sqdSum: 0, count: 0 };
+      }
+      bySex[item.sex].ccSum += avgCC;
+      bySex[item.sex].sqdSum += avgSQD;
+      bySex[item.sex].count++;
+
+      if (!byAgeGroup[item.ageGroup]) {
+        byAgeGroup[item.ageGroup] = { ccSum: 0, sqdSum: 0, count: 0 };
+      }
+      byAgeGroup[item.ageGroup].ccSum += avgCC;
+      byAgeGroup[item.ageGroup].sqdSum += avgSQD;
+      byAgeGroup[item.ageGroup].count++;
+    });
+
+    const satisfactionByDemographic = {
+      byClientType: Object.fromEntries(
+        Object.entries(byClientType).map(([key, val]) => [
+          key,
+          {
+            avgCC: parseFloat((val.ccSum / val.count).toFixed(2)),
+            avgSQD: parseFloat((val.sqdSum / val.count).toFixed(2)),
+            count: val.count,
+          },
+        ])
+      ),
+      bySex: Object.fromEntries(
+        Object.entries(bySex).map(([key, val]) => [
+          key,
+          {
+            avgCC: parseFloat((val.ccSum / val.count).toFixed(2)),
+            avgSQD: parseFloat((val.sqdSum / val.count).toFixed(2)),
+            count: val.count,
+          },
+        ])
+      ),
+      byAgeGroup: Object.fromEntries(
+        Object.entries(byAgeGroup).map(([key, val]) => [
+          key,
+          {
+            avgCC: parseFloat((val.ccSum / val.count).toFixed(2)),
+            avgSQD: parseFloat((val.sqdSum / val.count).toFixed(2)),
+            count: val.count,
+          },
+        ])
+      ),
+    };
+
+    // Office Performance Metrics
+    const officeMetrics: Record<string, { count: number; ccSum: number; sqdSum: number }> = {};
+    items.forEach(item => {
+      const avgCC = (convertCCToNumber(item.cc1) + convertCCToNumber(item.cc2) + convertCCToNumber(item.cc3)) / 3;
+      const sqdValues = sqdKeys.map(key => convertSQDToNumber(item[key as keyof FormData] as string)).filter(v => v > 0);
+      const avgSQD = sqdValues.length > 0 ? sqdValues.reduce((a, b) => a + b, 0) / sqdValues.length : 0;
+
+      if (!officeMetrics[item.office]) {
+        officeMetrics[item.office] = { count: 0, ccSum: 0, sqdSum: 0 };
+      }
+      officeMetrics[item.office].count++;
+      officeMetrics[item.office].ccSum += avgCC;
+      officeMetrics[item.office].sqdSum += avgSQD;
+    });
+
+    const responseRateByOffice = Object.entries(officeMetrics)
+      .map(([office, data]) => ({
+        office,
+        count: data.count,
+        avgCC: parseFloat((data.ccSum / data.count).toFixed(2)),
+        avgSQD: parseFloat((data.sqdSum / data.count).toFixed(2)),
+      }))
+      .sort((a, b) => b.count - a.count);
+
     return {
       campus,
       totalResponses: items.length,
@@ -134,6 +256,9 @@ export const analyzeByCampus = (data: FormData[]): CampusMetrics[] => {
       sqdDistribution,
       sqdAverages,
       topServices,
+      timeSeriesData,
+      satisfactionByDemographic,
+      responseRateByOffice,
     };
   });
 };

@@ -129,3 +129,108 @@ export const TopServicesChart = ({ data }: TopServicesChartProps) => {
     </div>
   );
 };
+
+interface TimeSeriesChartProps {
+  data: Array<{ date: string; responses: number; avgCC: number; avgSQD: number }>;
+}
+
+export const TimeSeriesChart = ({ data }: TimeSeriesChartProps) => {
+  if (data.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground p-8">
+        No time series data available
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-80">
+      <h4 className="text-sm font-semibold mb-4">Response Trends Over Time</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+          <YAxis yAxisId="left" />
+          <YAxis yAxisId="right" orientation="right" domain={[0, 5]} />
+          <Tooltip />
+          <Legend />
+          <Line yAxisId="left" type="monotone" dataKey="responses" stroke="#8884d8" name="Responses" strokeWidth={2} />
+          <Line yAxisId="right" type="monotone" dataKey="avgCC" stroke="#82ca9d" name="Avg CC" strokeWidth={2} />
+          <Line yAxisId="right" type="monotone" dataKey="avgSQD" stroke="#ffc658" name="Avg SQD" strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+interface SatisfactionComparisonProps {
+  data: Record<string, { avgCC: number; avgSQD: number; count: number }>;
+  title: string;
+  categoryName: string;
+}
+
+export const SatisfactionComparisonChart = ({ data, title, categoryName }: SatisfactionComparisonProps) => {
+  const chartData = Object.entries(data).map(([name, values]) => ({
+    name,
+    'CC Rating': values.avgCC,
+    'SQD Rating': values.avgSQD,
+    responses: values.count,
+  }));
+
+  if (chartData.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground p-8">
+        No data available for {title}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-80">
+      <h4 className="text-sm font-semibold mb-4">{title}</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+          <YAxis domain={[0, 5]} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="CC Rating" fill="#8884d8" />
+          <Bar dataKey="SQD Rating" fill="#82ca9d" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+interface OfficePerformanceProps {
+  data: Array<{ office: string; count: number; avgCC: number; avgSQD: number }>;
+}
+
+export const OfficePerformanceChart = ({ data }: OfficePerformanceProps) => {
+  if (data.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground p-8">
+        No office performance data available
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-96">
+      <h4 className="text-sm font-semibold mb-4">Office Performance Metrics</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical">
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis type="number" />
+          <YAxis dataKey="office" type="category" width={150} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="count" fill="#8884d8" name="Responses" />
+          <Bar dataKey="avgCC" fill="#82ca9d" name="Avg CC" />
+          <Bar dataKey="avgSQD" fill="#ffc658" name="Avg SQD" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
