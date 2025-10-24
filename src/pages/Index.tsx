@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { EncodingForm } from "@/components/EncodingForm";
 import { Button } from "@/components/ui/button";
-import { Download, BarChart3, Trash2 } from "lucide-react";
+import { Download, BarChart3, Trash2, Upload } from "lucide-react";
 import { FormData } from "@/types/form";
 import { exportToExcel } from "@/utils/excelExport";
+import { parseCSVToFormData, getExpectedCSVColumns } from "@/utils/csvImport";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -24,6 +25,10 @@ const Index = () => {
   const [submissions, setSubmissions] = useState<FormData[]>([]);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [clearConfirmation, setClearConfirmation] = useState("");
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importConfirmation, setImportConfirmation] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("encodedData");
@@ -86,6 +91,60 @@ const Index = () => {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === "text/csv") {
+      setSelectedFile(file);
+      setShowImportDialog(true);
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImportData = async () => {
+    if (importConfirmation !== "Yes") {
+      toast({
+        title: "Invalid Input",
+        description: "Please type 'Yes' to confirm",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedFile) return;
+
+    try {
+      const text = await selectedFile.text();
+      const importedData = parseCSVToFormData(text);
+      
+      const mergedData = [...submissions, ...importedData];
+      setSubmissions(mergedData);
+      localStorage.setItem("encodedData", JSON.stringify(mergedData));
+      
+      setShowImportDialog(false);
+      setImportConfirmation("");
+      setSelectedFile(null);
+      
+      toast({
+        title: "Success",
+        description: `Imported ${importedData.length} entries successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Failed to parse CSV file",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="bg-[#800000] text-white py-3 shadow-lg flex-shrink-0">
@@ -109,11 +168,27 @@ const Index = () => {
             <Trash2 className="w-4 h-4" />
             Clear Data
           </Button>
+          <Button 
+            onClick={() => fileInputRef.current?.click()} 
+            variant="outline" 
+            className="gap-2 h-9 text-sm"
+          >
+            <Upload className="w-4 h-4" />
+            Import CSV
+          </Button>
           <Button onClick={handleExport} className="gap-2 h-9 text-sm">
             <Download className="w-4 h-4" />
             Export to Excel ({submissions.length} entries)
           </Button>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
 
         <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
           <AlertDialogContent>
@@ -133,6 +208,38 @@ const Index = () => {
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setClearConfirmation("")}>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleClearData}>Clear Data</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Import Data from CSV</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <div>
+                  The CSV file should have the following column arrangement:
+                </div>
+                <div className="bg-muted p-3 rounded text-xs font-mono break-all">
+                  {getExpectedCSVColumns()}
+                </div>
+                <div className="text-sm">
+                  This will merge the imported data with your existing data. Type "Yes" below to confirm.
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Input
+              placeholder="Type 'Yes' to confirm"
+              value={importConfirmation}
+              onChange={(e) => setImportConfirmation(e.target.value)}
+              className="my-4"
+            />
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setImportConfirmation("");
+                setSelectedFile(null);
+              }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleImportData}>Import Data</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

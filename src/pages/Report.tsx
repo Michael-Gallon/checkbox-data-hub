@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download } from "lucide-react";
 import { FormData } from "@/types/form";
 import { analyzeByCampus, calculateOverallMetrics, CampusMetrics } from "@/utils/reportAnalytics";
@@ -10,17 +11,47 @@ import { DistributionChart, AverageChart, TopServicesChart } from "@/components/
 
 const Report = () => {
   const navigate = useNavigate();
+  const [allData, setAllData] = useState<FormData[]>([]);
   const [campusMetrics, setCampusMetrics] = useState<CampusMetrics[]>([]);
   const [overallMetrics, setOverallMetrics] = useState<any>(null);
+  const [selectedCampus, setSelectedCampus] = useState<string>("all");
+  const [selectedOffice, setSelectedOffice] = useState<string>("all");
+  const [availableCampuses, setAvailableCampuses] = useState<string[]>([]);
+  const [availableOffices, setAvailableOffices] = useState<string[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("encodedData");
     if (saved) {
       const data: FormData[] = JSON.parse(saved);
+      setAllData(data);
+      
+      // Extract unique campuses and offices
+      const campuses = Array.from(new Set(data.map(d => d.campus))).sort();
+      const offices = Array.from(new Set(data.map(d => d.office))).sort();
+      setAvailableCampuses(campuses);
+      setAvailableOffices(offices);
+      
+      // Initial analysis with all data
       setCampusMetrics(analyzeByCampus(data));
       setOverallMetrics(calculateOverallMetrics(data));
     }
   }, []);
+
+  useEffect(() => {
+    if (allData.length === 0) return;
+    
+    // Filter data based on selections
+    let filteredData = allData;
+    if (selectedCampus !== "all") {
+      filteredData = filteredData.filter(d => d.campus === selectedCampus);
+    }
+    if (selectedOffice !== "all") {
+      filteredData = filteredData.filter(d => d.office === selectedOffice);
+    }
+    
+    setCampusMetrics(analyzeByCampus(filteredData));
+    setOverallMetrics(calculateOverallMetrics(filteredData));
+  }, [selectedCampus, selectedOffice, allData]);
 
   const handlePrint = () => {
     window.print();
@@ -69,6 +100,46 @@ const Report = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Filters */}
+        <Card className="mb-6 print:hidden">
+          <CardHeader>
+            <CardTitle>Report Filters</CardTitle>
+            <CardDescription>Filter the report by campus and/or office</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Campus</label>
+                <Select value={selectedCampus} onValueChange={setSelectedCampus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select campus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Campuses</SelectItem>
+                    {availableCampuses.map(campus => (
+                      <SelectItem key={campus} value={campus}>{campus}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Office</label>
+                <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select office" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Offices</SelectItem>
+                    {availableOffices.map(office => (
+                      <SelectItem key={office} value={office}>{office}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Executive Summary */}
         <Card className="mb-8">
           <CardHeader>
@@ -216,12 +287,47 @@ const Report = () => {
 
             {/* Top Services */}
             {campus.topServices.length > 0 && (
-              <Card>
+              <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="text-lg">Most Requested Services</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TopServicesChart data={campus.topServices} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Comments and Suggestions */}
+            {selectedOffice !== "all" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Comments & Suggestions</CardTitle>
+                  <CardDescription>Feedback from {selectedOffice}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {allData
+                      .filter(d => 
+                        d.campus === campus.campus && 
+                        d.office === selectedOffice && 
+                        d.comments.trim() !== ""
+                      )
+                      .map((entry, idx) => (
+                        <div key={idx} className="border-l-4 border-primary pl-4 py-2">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {new Date(entry.timestamp).toLocaleDateString()} - {entry.clientType}
+                          </div>
+                          <p className="text-sm">{entry.comments}</p>
+                        </div>
+                      ))}
+                    {allData.filter(d => 
+                      d.campus === campus.campus && 
+                      d.office === selectedOffice && 
+                      d.comments.trim() !== ""
+                    ).length === 0 && (
+                      <p className="text-sm text-muted-foreground">No comments available for this office.</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
