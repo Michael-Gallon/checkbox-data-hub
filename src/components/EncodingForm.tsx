@@ -158,7 +158,86 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 max-w-7xl mx-auto p-4 bg-card rounded-lg shadow-lg h-[calc(100vh-8rem)] overflow-hidden">
-      {/* Column 1 */}
+      {/* Column 1 - Citizens Charter & SQD */}
+      <div className="space-y-3 overflow-y-auto pr-2">
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold">Citizen's Charter (CC)</h3>
+          <CCTable
+            values={{
+              cc1,
+              cc2,
+              cc3,
+            }}
+            onChange={(field, value) => {
+              const setters: { [key: string]: (value: string) => void } = {
+                cc1: setCc1,
+                cc2: setCc2,
+                cc3: setCc3,
+              };
+              setters[field]?.(value);
+            }}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold">Service Quality Dimensions (SQD)</h3>
+          <SQDTable
+            values={{
+              sqd0,
+              sqd1,
+              sqd2,
+              sqd3,
+              sqd4,
+              sqd5,
+              sqd6,
+              sqd7,
+              sqd8,
+            }}
+            onChange={(field, value) => {
+              const setters: { [key: string]: (value: string) => void } = {
+                sqd0: setSqd0,
+                sqd1: setSqd1,
+                sqd2: setSqd2,
+                sqd3: setSqd3,
+                sqd4: setSqd4,
+                sqd5: setSqd5,
+                sqd6: setSqd6,
+                sqd7: setSqd7,
+                sqd8: setSqd8,
+              };
+              setters[field]?.(value);
+            }}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="documentNumber">Document Number</Label>
+          <Input
+            id="documentNumber"
+            type="number"
+            value={documentNumber}
+            onChange={(e) => setDocumentNumber(e.target.value)}
+            className="h-9"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="comments">Comments/Suggestions</Label>
+          <Textarea
+            id="comments"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            rows={2}
+            className="resize-none"
+          />
+        </div>
+
+        <Button type="submit" className="w-full h-9" size="lg">
+          Submit
+        </Button>
+      </div>
+
+      {/* Column 2 - Form Fields */}
       <div className="space-y-3 overflow-y-auto pr-2">
         <div className="space-y-2">
           <Label htmlFor="campus">Campus</Label>
@@ -275,85 +354,6 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
             ))}
           </datalist>
         </div>
-      </div>
-
-      {/* Column 2 */}
-      <div className="space-y-3 overflow-y-auto pr-2">
-        <div className="space-y-2">
-          <h3 className="text-base font-semibold">Citizen's Charter (CC)</h3>
-          <CCTable
-            values={{
-              cc1,
-              cc2,
-              cc3,
-            }}
-            onChange={(field, value) => {
-              const setters: { [key: string]: (value: string) => void } = {
-                cc1: setCc1,
-                cc2: setCc2,
-                cc3: setCc3,
-              };
-              setters[field]?.(value);
-            }}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-base font-semibold">Service Quality Dimensions (SQD)</h3>
-          <SQDTable
-            values={{
-              sqd0,
-              sqd1,
-              sqd2,
-              sqd3,
-              sqd4,
-              sqd5,
-              sqd6,
-              sqd7,
-              sqd8,
-            }}
-            onChange={(field, value) => {
-              const setters: { [key: string]: (value: string) => void } = {
-                sqd0: setSqd0,
-                sqd1: setSqd1,
-                sqd2: setSqd2,
-                sqd3: setSqd3,
-                sqd4: setSqd4,
-                sqd5: setSqd5,
-                sqd6: setSqd6,
-                sqd7: setSqd7,
-                sqd8: setSqd8,
-              };
-              setters[field]?.(value);
-            }}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="documentNumber">Document Number</Label>
-          <Input
-            id="documentNumber"
-            type="number"
-            value={documentNumber}
-            onChange={(e) => setDocumentNumber(e.target.value)}
-            className="h-9"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="comments">Comments/Suggestions</Label>
-          <Textarea
-            id="comments"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
-        </div>
-
-        <Button type="submit" className="w-full h-9" size="lg">
-          Submit
-        </Button>
       </div>
     </form>
   );
