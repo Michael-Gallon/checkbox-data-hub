@@ -52,7 +52,6 @@ export const CCTable = ({ values, onChange }: CCTableProps) => {
                     <div className="flex justify-center">
                       <Checkbox
                         checked={values[fieldKey] === col}
-                        onCheckedChange={() => onChange(fieldKey, col)}
                         className="h-4 w-4 pointer-events-none"
                       />
                     </div>
