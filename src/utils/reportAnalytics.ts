@@ -1,5 +1,27 @@
 import { FormData } from "@/types/form";
 
+export interface CC1Distribution {
+  "Knew and saw charter": number;
+  "Knew but didn't see": number;
+  "Learned from this visit": number;
+  "N/A": number;
+}
+
+export interface CC2Distribution {
+  "Easy to see": number;
+  "Somewhat easy to see": number;
+  "Difficult to see": number;
+  "Not visible at all": number;
+  "N/A": number;
+}
+
+export interface CC3Distribution {
+  "Helped very much": number;
+  "Somewhat helped": number;
+  "Did not help": number;
+  "N/A": number;
+}
+
 export interface CampusMetrics {
   campus: string;
   totalResponses: number;
@@ -7,10 +29,10 @@ export interface CampusMetrics {
   sexDistribution: Record<string, number>;
   ageGroupDistribution: Record<string, number>;
   officeDistribution: Record<string, number>;
-  ccAverages: {
-    cc1: number;
-    cc2: number;
-    cc3: number;
+  ccDistributions: {
+    cc1: CC1Distribution;
+    cc2: CC2Distribution;
+    cc3: CC3Distribution;
   };
   sqdDistribution: Record<string, Record<string, number>>;
   sqdAverages: Record<string, number>;
@@ -83,17 +105,57 @@ export const analyzeByCampus = (data: FormData[]): CampusMetrics[] => {
       }
     });
 
-    // CC Averages
-    const ccValues = items.map(item => ({
-      cc1: convertCCToNumber(item.cc1),
-      cc2: convertCCToNumber(item.cc2),
-      cc3: convertCCToNumber(item.cc3),
-    }));
-    
-    const ccAverages = {
-      cc1: ccValues.reduce((sum, v) => sum + v.cc1, 0) / ccValues.length,
-      cc2: ccValues.reduce((sum, v) => sum + v.cc2, 0) / ccValues.length,
-      cc3: ccValues.reduce((sum, v) => sum + v.cc3, 0) / ccValues.length,
+    // CC Distributions (Categorical)
+    const cc1Distribution: CC1Distribution = {
+      "Knew and saw charter": 0,
+      "Knew but didn't see": 0,
+      "Learned from this visit": 0,
+      "N/A": 0,
+    };
+
+    const cc2Distribution: CC2Distribution = {
+      "Easy to see": 0,
+      "Somewhat easy to see": 0,
+      "Difficult to see": 0,
+      "Not visible at all": 0,
+      "N/A": 0,
+    };
+
+    const cc3Distribution: CC3Distribution = {
+      "Helped very much": 0,
+      "Somewhat helped": 0,
+      "Did not help": 0,
+      "N/A": 0,
+    };
+
+    items.forEach(item => {
+      // Map CC1 responses
+      const cc1Val = item.cc1?.toString() || "";
+      if (cc1Val === "1") cc1Distribution["Knew and saw charter"]++;
+      else if (cc1Val === "2") cc1Distribution["Knew but didn't see"]++;
+      else if (cc1Val === "3") cc1Distribution["Learned from this visit"]++;
+      else cc1Distribution["N/A"]++;
+
+      // Map CC2 responses
+      const cc2Val = item.cc2?.toString() || "";
+      if (cc2Val === "1") cc2Distribution["Easy to see"]++;
+      else if (cc2Val === "2") cc2Distribution["Somewhat easy to see"]++;
+      else if (cc2Val === "3") cc2Distribution["Difficult to see"]++;
+      else if (cc2Val === "4") cc2Distribution["Not visible at all"]++;
+      else cc2Distribution["N/A"]++;
+
+      // Map CC3 responses
+      const cc3Val = item.cc3?.toString() || "";
+      if (cc3Val === "1") cc3Distribution["Helped very much"]++;
+      else if (cc3Val === "2") cc3Distribution["Somewhat helped"]++;
+      else if (cc3Val === "3") cc3Distribution["Did not help"]++;
+      else cc3Distribution["N/A"]++;
+    });
+
+    const ccDistributions = {
+      cc1: cc1Distribution,
+      cc2: cc2Distribution,
+      cc3: cc3Distribution,
     };
 
     // SQD Distribution and Averages
@@ -252,7 +314,7 @@ export const analyzeByCampus = (data: FormData[]): CampusMetrics[] => {
       sexDistribution,
       ageGroupDistribution,
       officeDistribution,
-      ccAverages,
+      ccDistributions,
       sqdDistribution,
       sqdAverages,
       topServices,
@@ -263,19 +325,123 @@ export const analyzeByCampus = (data: FormData[]): CampusMetrics[] => {
   });
 };
 
+// Helper functions for CC analysis
+export const calculateAwarenessRate = (cc1Data: CC1Distribution): string => {
+  const total = Object.values(cc1Data).reduce((a, b) => a + b, 0) - cc1Data["N/A"];
+  if (total === 0) return "0";
+  const aware = cc1Data["Knew and saw charter"] + cc1Data["Knew but didn't see"];
+  return ((aware / total) * 100).toFixed(1);
+};
+
+export const calculateVisibilityScore = (cc2Data: CC2Distribution): string => {
+  const total = Object.values(cc2Data).reduce((a, b) => a + b, 0) - cc2Data["N/A"];
+  if (total === 0) return "0";
+  const easy = cc2Data["Easy to see"] + cc2Data["Somewhat easy to see"];
+  return ((easy / total) * 100).toFixed(1);
+};
+
+export const calculateHelpfulnessRate = (cc3Data: CC3Distribution): string => {
+  const total = Object.values(cc3Data).reduce((a, b) => a + b, 0) - cc3Data["N/A"];
+  if (total === 0) return "0";
+  const helpful = cc3Data["Helped very much"] + cc3Data["Somewhat helped"];
+  return ((helpful / total) * 100).toFixed(1);
+};
+
+export const calculateCC1Insight = (data: CC1Distribution): string => {
+  const total = Object.values(data).reduce((a, b) => a + b, 0) - data["N/A"];
+  if (total === 0) return "No data available for analysis.";
+  
+  const knewAndSaw = ((data["Knew and saw charter"] / total) * 100).toFixed(0);
+  const learnedHere = ((data["Learned from this visit"] / total) * 100).toFixed(0);
+  
+  if (data["Knew and saw charter"] > total * 0.6) {
+    return `Strong charter awareness: ${knewAndSaw}% of clients were already familiar with and saw the charter. This indicates effective pre-visit information dissemination.`;
+  } else if (data["Learned from this visit"] > total * 0.5) {
+    return `${learnedHere}% of clients learned about the Citizen's Charter during their visit, suggesting an opportunity to improve pre-visit awareness through marketing and orientation.`;
+  } else {
+    return `Mixed awareness levels detected. ${knewAndSaw}% knew and saw the charter, while ${learnedHere}% learned about it on-site. Consider enhancing both pre-visit and on-site communication strategies.`;
+  }
+};
+
+export const calculateCC2Insight = (data: CC2Distribution): string => {
+  const total = Object.values(data).reduce((a, b) => a + b, 0) - data["N/A"];
+  if (total === 0) return "No data available for analysis.";
+  
+  const easyToSee = ((data["Easy to see"] / total) * 100).toFixed(0);
+  const difficult = (((data["Difficult to see"] + data["Not visible at all"]) / total) * 100).toFixed(0);
+  
+  if ((data["Easy to see"] + data["Somewhat easy to see"]) > total * 0.8) {
+    return `Excellent visibility: ${easyToSee}% found the charter easy to see. The current placement and visibility strategy is working well.`;
+  } else if ((data["Difficult to see"] + data["Not visible at all"]) > total * 0.3) {
+    return `Visibility concern: ${difficult}% of clients found the charter difficult to see or not visible. Immediate action needed to improve charter placement and signage.`;
+  } else {
+    return `Moderate visibility: ${easyToSee}% found it easy to see. Consider enhancing charter visibility through better placement, larger displays, or additional signage.`;
+  }
+};
+
+export const calculateCC3Insight = (data: CC3Distribution): string => {
+  const total = Object.values(data).reduce((a, b) => a + b, 0) - data["N/A"];
+  if (total === 0) return "No data available for analysis.";
+  
+  const veryHelpful = ((data["Helped very much"] / total) * 100).toFixed(0);
+  const notHelpful = ((data["Did not help"] / total) * 100).toFixed(0);
+  
+  if (data["Helped very much"] > total * 0.7) {
+    return `High effectiveness: ${veryHelpful}% found the charter very helpful. The charter is successfully guiding clients through their transactions.`;
+  } else if (data["Did not help"] > total * 0.3) {
+    return `Limited effectiveness: ${notHelpful}% found the charter unhelpful. Review charter content, clarity, and relevance to ensure it meets client needs.`;
+  } else {
+    return `Moderate helpfulness: ${veryHelpful}% found it very helpful. Consider improving charter content, format, or presentation to increase its practical value to clients.`;
+  }
+};
+
 export const calculateOverallMetrics = (data: FormData[]) => {
   const totalResponses = data.length;
   const campusCount = new Set(data.map(d => d.campus)).size;
   
-  const allCC = data.map(item => [
-    convertCCToNumber(item.cc1),
-    convertCCToNumber(item.cc2),
-    convertCCToNumber(item.cc3),
-  ]).flat().filter(v => v > 0);
-  
-  const avgCCSatisfaction = allCC.length > 0 
-    ? allCC.reduce((sum, v) => sum + v, 0) / allCC.length 
-    : 0;
+  // Calculate overall CC distributions
+  const overallCC1: CC1Distribution = {
+    "Knew and saw charter": 0,
+    "Knew but didn't see": 0,
+    "Learned from this visit": 0,
+    "N/A": 0,
+  };
+
+  const overallCC2: CC2Distribution = {
+    "Easy to see": 0,
+    "Somewhat easy to see": 0,
+    "Difficult to see": 0,
+    "Not visible at all": 0,
+    "N/A": 0,
+  };
+
+  const overallCC3: CC3Distribution = {
+    "Helped very much": 0,
+    "Somewhat helped": 0,
+    "Did not help": 0,
+    "N/A": 0,
+  };
+
+  data.forEach(item => {
+    const cc1Val = item.cc1?.toString() || "";
+    if (cc1Val === "1") overallCC1["Knew and saw charter"]++;
+    else if (cc1Val === "2") overallCC1["Knew but didn't see"]++;
+    else if (cc1Val === "3") overallCC1["Learned from this visit"]++;
+    else overallCC1["N/A"]++;
+
+    const cc2Val = item.cc2?.toString() || "";
+    if (cc2Val === "1") overallCC2["Easy to see"]++;
+    else if (cc2Val === "2") overallCC2["Somewhat easy to see"]++;
+    else if (cc2Val === "3") overallCC2["Difficult to see"]++;
+    else if (cc2Val === "4") overallCC2["Not visible at all"]++;
+    else overallCC2["N/A"]++;
+
+    const cc3Val = item.cc3?.toString() || "";
+    if (cc3Val === "1") overallCC3["Helped very much"]++;
+    else if (cc3Val === "2") overallCC3["Somewhat helped"]++;
+    else if (cc3Val === "3") overallCC3["Did not help"]++;
+    else overallCC3["N/A"]++;
+  });
 
   const sqdKeys = ['sqd0', 'sqd1', 'sqd2', 'sqd3', 'sqd4', 'sqd5', 'sqd6', 'sqd7', 'sqd8'];
   const allSQD = data.map(item => 
@@ -289,7 +455,9 @@ export const calculateOverallMetrics = (data: FormData[]) => {
   return {
     totalResponses,
     campusCount,
-    avgCCSatisfaction,
+    overallAwarenessRate: calculateAwarenessRate(overallCC1),
+    overallVisibilityScore: calculateVisibilityScore(overallCC2),
+    overallHelpfulnessRate: calculateHelpfulnessRate(overallCC3),
     avgSQDSatisfaction,
   };
 };

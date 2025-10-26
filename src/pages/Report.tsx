@@ -6,8 +6,9 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download } from "lucide-react";
 import { FormData } from "@/types/form";
-import { analyzeByCampus, calculateOverallMetrics, CampusMetrics } from "@/utils/reportAnalytics";
+import { analyzeByCampus, calculateOverallMetrics, CampusMetrics, calculateAwarenessRate, calculateVisibilityScore, calculateHelpfulnessRate, calculateCC1Insight, calculateCC2Insight, calculateCC3Insight } from "@/utils/reportAnalytics";
 import { DistributionChart, AverageChart, TopServicesChart, TimeSeriesChart, SatisfactionComparisonChart, OfficePerformanceChart } from "@/components/ReportCharts";
+import { CC1AwarenessChart, CC2VisibilityChart, CC3HelpfulnessChart } from "@/components/CCCharts";
 
 const Report = () => {
   const navigate = useNavigate();
@@ -158,9 +159,21 @@ const Report = () => {
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary">
-                  {overallMetrics.avgCCSatisfaction.toFixed(2)}
+                  {overallMetrics.overallAwarenessRate}%
                 </div>
-                <div className="text-sm text-muted-foreground mt-2">Avg CC Rating (out of 5)</div>
+                <div className="text-sm text-muted-foreground mt-2">Charter Awareness Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary">
+                  {overallMetrics.overallVisibilityScore}%
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">Easy Visibility Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary">
+                  {overallMetrics.overallHelpfulnessRate}%
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">Helpfulness Rate</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary">
@@ -241,31 +254,111 @@ const Report = () => {
               </Card>
             </div>
 
-            {/* Citizen's Charter */}
+            {/* Citizen's Charter Analysis */}
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle className="text-lg">Citizen's Charter (CC) - Average Ratings</CardTitle>
-                <CardDescription>Scale: 1 (Poor) to 5 (Excellent)</CardDescription>
+                <CardTitle className="text-lg">Citizen's Charter Awareness & Effectiveness</CardTitle>
+                <CardDescription>
+                  Understanding how clients perceive and interact with the Citizen's Charter
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-6 mb-6">
-                  <div className="text-center p-6 bg-muted rounded-lg">
-                    <div className="text-3xl font-bold text-primary">
-                      {campus.ccAverages.cc1.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">CC1 Average</div>
+              <CardContent className="space-y-8">
+                {/* CC1: Awareness Analysis */}
+                <div>
+                  <h4 className="font-semibold mb-3 text-base">
+                    Charter Awareness Level
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    How familiar are clients with the Citizen's Charter before visiting?
+                  </p>
+                  <CC1AwarenessChart data={campus.ccDistributions.cc1} />
+                  
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+                    <p className="text-sm">
+                      <strong className="text-blue-900 dark:text-blue-100">Key Insight:</strong>{" "}
+                      <span className="text-blue-800 dark:text-blue-200">
+                        {calculateCC1Insight(campus.ccDistributions.cc1)}
+                      </span>
+                    </p>
                   </div>
-                  <div className="text-center p-6 bg-muted rounded-lg">
-                    <div className="text-3xl font-bold text-primary">
-                      {campus.ccAverages.cc2.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">CC2 Average</div>
+                </div>
+
+                {/* CC2: Visibility Analysis */}
+                <div>
+                  <h4 className="font-semibold mb-3 text-base">
+                    Charter Visibility Assessment
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    How easy is it for clients to find and see the Citizen's Charter?
+                  </p>
+                  <CC2VisibilityChart data={campus.ccDistributions.cc2} />
+                  
+                  <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
+                    <p className="text-sm">
+                      <strong className="text-amber-900 dark:text-amber-100">Key Insight:</strong>{" "}
+                      <span className="text-amber-800 dark:text-amber-200">
+                        {calculateCC2Insight(campus.ccDistributions.cc2)}
+                      </span>
+                    </p>
                   </div>
-                  <div className="text-center p-6 bg-muted rounded-lg">
-                    <div className="text-3xl font-bold text-primary">
-                      {campus.ccAverages.cc3.toFixed(2)}
+                </div>
+
+                {/* CC3: Helpfulness Analysis */}
+                <div>
+                  <h4 className="font-semibold mb-3 text-base">
+                    Charter Helpfulness Rating
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    To what extent did the Citizen's Charter help clients with their transaction?
+                  </p>
+                  <CC3HelpfulnessChart data={campus.ccDistributions.cc3} />
+                  
+                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+                    <p className="text-sm">
+                      <strong className="text-green-900 dark:text-green-100">Key Insight:</strong>{" "}
+                      <span className="text-green-800 dark:text-green-200">
+                        {calculateCC3Insight(campus.ccDistributions.cc3)}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Overall CC Summary Statistics */}
+                <div className="border-t pt-6 mt-6">
+                  <h4 className="font-semibold mb-4">Summary Statistics</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-2xl font-bold text-primary">
+                        {calculateAwarenessRate(campus.ccDistributions.cc1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Pre-existing Awareness Rate
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground mt-2">CC3 Average</div>
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-2xl font-bold text-primary">
+                        {calculateVisibilityScore(campus.ccDistributions.cc2)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Easy Visibility Rate
+                      </div>
+                    </div>
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-2xl font-bold text-primary">
+                        {calculateHelpfulnessRate(campus.ccDistributions.cc3)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        High Helpfulness Rate
+                      </div>
+                    </div>
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-2xl font-bold text-primary">
+                        {campus.totalResponses}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Total Responses
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -418,14 +511,21 @@ const Report = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h4 className="font-semibold mb-2">Overall Satisfaction</h4>
+              <h4 className="font-semibold mb-2">Citizen's Charter Effectiveness</h4>
               <p className="text-sm text-muted-foreground">
-                The average Citizen's Charter rating across all campuses is{" "}
+                Overall charter awareness stands at{" "}
                 <span className="font-semibold text-foreground">
-                  {overallMetrics.avgCCSatisfaction.toFixed(2)}/5.0
+                  {overallMetrics.overallAwarenessRate}%
                 </span>
-                , indicating {overallMetrics.avgCCSatisfaction >= 4 ? "high" : overallMetrics.avgCCSatisfaction >= 3 ? "moderate" : "low"} satisfaction
-                with service delivery standards.
+                , with{" "}
+                <span className="font-semibold text-foreground">
+                  {overallMetrics.overallVisibilityScore}%
+                </span>
+                {" "}finding it easy to see and{" "}
+                <span className="font-semibold text-foreground">
+                  {overallMetrics.overallHelpfulnessRate}%
+                </span>
+                {" "}finding it helpful. Focus on improving visibility and pre-visit awareness to enhance charter effectiveness.
               </p>
             </div>
             <div>

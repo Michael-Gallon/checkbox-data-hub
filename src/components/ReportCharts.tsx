@@ -1,4 +1,5 @@
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { CC1Distribution, CC2Distribution, CC3Distribution } from "@/utils/reportAnalytics";
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#a78bfa', '#f472b6', '#fb923c', '#34d399'];
 
