@@ -51,12 +51,16 @@ export const SQDTable = ({ values, onChange }: SQDTableProps) => {
               <tr key={row}>
                 <td className="border border-border p-1.5 lg:p-2 font-medium text-xs lg:text-sm">{row}</td>
                 {columns.map((col) => (
-                  <td key={col} className="border border-border p-1.5 lg:p-2 text-center">
+                  <td 
+                    key={col} 
+                    className="border border-border p-1.5 lg:p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => onChange(fieldKey, col)}
+                  >
                     <div className="flex justify-center">
                       <Checkbox
                         checked={values[fieldKey] === col}
                         onCheckedChange={() => onChange(fieldKey, col)}
-                        className="h-4 w-4"
+                        className="h-4 w-4 pointer-events-none"
                       />
                     </div>
                   </td>
