@@ -149,39 +149,44 @@ const Index = () => {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="bg-[#800000] text-white py-3 shadow-lg flex-shrink-0">
         <div className="container mx-auto px-4">
-          <h1 className="text-xl font-bold">Checkbox Encode App</h1>
-          <p className="text-xs mt-1 opacity-90">Monthly Data Encoding and Analysis</p>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-xl font-bold">Checkbox Encode App</h1>
+              <p className="text-xs mt-1 opacity-90">Monthly Data Encoding and Analysis</p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={handleGenerateReport} variant="outline" className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Generate Report</span>
+              </Button>
+              <Button 
+                onClick={() => setShowClearDialog(true)} 
+                variant="outline" 
+                className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Clear Data</span>
+              </Button>
+              <Button 
+                onClick={() => fileInputRef.current?.click()} 
+                variant="outline" 
+                className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Import CSV</span>
+              </Button>
+              <Button onClick={handleExport} className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
+                <Download className="w-4 h-4" />
+                <span className="hidden lg:inline">Export to Excel ({submissions.length})</span>
+                <span className="hidden sm:inline lg:hidden">Export ({submissions.length})</span>
+                <span className="sm:hidden">Export</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </header>
       
       <main className="container mx-auto px-4 py-3 flex-1 flex flex-col overflow-hidden">
-        <div className="flex justify-end gap-2 mb-3 flex-shrink-0">
-          <Button onClick={handleGenerateReport} variant="outline" className="gap-2 h-9 text-sm">
-            <BarChart3 className="w-4 h-4" />
-            Generate Report
-          </Button>
-          <Button 
-            onClick={() => setShowClearDialog(true)} 
-            variant="outline" 
-            className="gap-2 h-9 text-sm"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear Data
-          </Button>
-          <Button 
-            onClick={() => fileInputRef.current?.click()} 
-            variant="outline" 
-            className="gap-2 h-9 text-sm"
-          >
-            <Upload className="w-4 h-4" />
-            Import CSV
-          </Button>
-          <Button onClick={handleExport} className="gap-2 h-9 text-sm">
-            <Download className="w-4 h-4" />
-            Export to Excel ({submissions.length} entries)
-          </Button>
-        </div>
-
         <input
           ref={fileInputRef}
           type="file"
