@@ -17,7 +17,29 @@ interface EncodingFormProps {
   onSubmit: (data: FormData) => void;
 }
 
-const DEFAULT_OFFICE_OPTIONS = ["ICT", "HR", "Finance", "Operations", "Did not answer"];
+const DEFAULT_OFFICE_OPTIONS = [
+  "Accounting",
+  "Admission",
+  "Budget",
+  "Business Affairs (Gen Merch)",
+  "Campus Director (CD)",
+  "Cashier",
+  "Dean, CBM",
+  "Dean, COHAS",
+  "Dean, COT",
+  "Dean, COTED",
+  "Graduate School",
+  "Guidance",
+  "Health Services Unit (HSU)",
+  "HRMD",
+  "ICT/MIS",
+  "ILDO",
+  "Library",
+  "Records",
+  "Registrar",
+  "Supply",
+  "Others"
+];
 
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
