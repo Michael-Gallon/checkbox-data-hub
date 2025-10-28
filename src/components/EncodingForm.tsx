@@ -41,6 +41,7 @@ const DEFAULT_OFFICE_OPTIONS = [
   "Others"
 ];
 
+
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
   const [campus, setCampus] = useState("Sorsogon City Campus");
