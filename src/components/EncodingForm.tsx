@@ -30,7 +30,7 @@ const DEFAULT_OFFICE_OPTIONS = [
   "Dean, COTED",
   "Graduate School",
   "Guidance",
-  "Health Services Unit",
+  "Health Services Unit (HSU)",
   "HRMD",
   "ICT/MIS",
   "ILDO",
