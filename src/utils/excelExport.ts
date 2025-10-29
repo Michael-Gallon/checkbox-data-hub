@@ -31,6 +31,6 @@ export const exportToExcel = (data: FormData[]) => {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Encoded Data');
 
-  const fileName = `encoded-data-${new Date().toISOString().split('T')[0]}.xlsx`;
+  const fileName = `encoded-data-${new Date().toISOString().split('T')[0]}.csv`;
   XLSX.writeFile(workbook, fileName);
 };
