@@ -273,6 +273,7 @@ const Report = () => {
                   </p>
                   <CC1AwarenessChart data={campus.ccDistributions.cc1} />
                   
+                  
                   <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
                     <p className="text-sm">
                       <strong className="text-blue-900 dark:text-blue-100">Key Insight:</strong>{" "}
@@ -410,20 +411,6 @@ const Report = () => {
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Satisfaction by Client Type</CardTitle>
-                    <CardDescription>Comparing CC and SQD ratings across client categories</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SatisfactionComparisonChart 
-                      data={campus.satisfactionByDemographic.byClientType}
-                      title=""
-                      categoryName="Client Type"
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
                     <CardTitle className="text-lg">Satisfaction by Sex</CardTitle>
                     <CardDescription>Gender-based satisfaction analysis</CardDescription>
                   </CardHeader>
@@ -473,31 +460,36 @@ const Report = () => {
                   <CardDescription>Qualitative feedback from {selectedOffice}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {allData
-                      .filter(d => 
-                        d.campus === campus.campus && 
-                        d.office === selectedOffice && 
-                        d.comments.trim() !== ""
-                      )
-                      .map((entry, idx) => (
-                        <div key={idx} className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r">
-                          <div className="text-xs text-muted-foreground mb-1 flex justify-between">
-                            <span>{new Date(entry.timestamp).toLocaleDateString()} - {entry.clientType}</span>
-                            <span className="font-mono text-xs">{entry.documentNumber}</span>
-                          </div>
-                          <p className="text-sm">{entry.comments}</p>
-                        </div>
-                      ))}
-                    {allData.filter(d => 
-                      d.campus === campus.campus && 
-                      d.office === selectedOffice && 
-                      d.comments.trim() !== ""
-                    ).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-8">No comments available for this office.</p>
-                    )}
-                  </div>
-                </CardContent>
+  {(() => {
+    const filteredComments = allData.filter(d => 
+      d.campus === campus.campus && 
+      d.office === selectedOffice && 
+      d.comments.trim() !== ""
+    );
+
+    return filteredComments.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredComments.map((entry, idx) => (
+          <div 
+            key={idx} 
+            className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r break-inside-avoid"
+          >
+            <div className="text-xs text-muted-foreground mb-1 flex justify-between">
+              <span>{new Date(entry.timestamp).toLocaleDateString()} - {entry.clientType}</span>
+              <span className="font-mono text-xs">{entry.documentNumber}</span>
+            </div>
+            <p className="text-sm">{entry.comments}</p>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-muted-foreground text-center py-8">
+        No comments available for this office.
+      </p>
+    );
+  })()}
+</CardContent>
+
               </Card>
               )}
             </div>
