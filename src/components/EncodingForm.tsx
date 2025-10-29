@@ -45,6 +45,7 @@ const DEFAULT_OFFICE_OPTIONS = [
 export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
   const { toast } = useToast();
   const [campus, setCampus] = useState("Sorsogon City Campus");
+  const [timestamp, setTimestamp] = useState(""); //NEW
   const [clientType, setClientType] = useState("C");
   const [sex, setSex] = useState("Male");
   const [ageGroup, setAgeGroup] = useState("19-B");
@@ -113,10 +114,11 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     
     const formData: FormData = {
       id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp ? timestamp : "Did not Specify",
       campus,
       clientType,
       sex,
@@ -261,6 +263,21 @@ export const EncodingForm = ({ onSubmit }: EncodingFormProps) => {
             </SelectContent>
           </Select>
         </div>
+        
+        <div className="flex flex-col rounded-md py-2 w-48">
+          <label htmlFor="date" className="text-sm font-medium mb-1">
+            Date
+          </label>
+          <input
+            id="date"
+            type="date"
+            value={timestamp}
+            onChange={(e) => setTimestamp(e.target.value)} // ✅ assign the selected date
+            className="border border-gray-300 rounded-md px-2 py-1"
+          />
+        </div>
+
+        
 
         <CheckboxGroup
           label="Client Type"
