@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { FormData } from '@/types/form';
 
-export const exportToExcel = (data: FormData[]) => {
+export const generateExcelBlob = (data: FormData[]) => {
   const worksheet = XLSX.utils.json_to_sheet(
     data.map((entry) => ({
       'Date/Time': new Date(entry.timestamp).toLocaleString(),
@@ -31,6 +31,6 @@ export const exportToExcel = (data: FormData[]) => {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Encoded Data');
 
-  const fileName = `encoded-data-${new Date().toISOString().split('T')[0]}.csv`;
-  XLSX.writeFile(workbook, fileName);
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  return new Blob([excelBuffer], { type: 'application/octet-stream' });
 };
