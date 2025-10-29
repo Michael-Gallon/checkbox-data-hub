@@ -451,7 +451,7 @@ const Report = () => {
                 </Card>
               </div>
             </div>
-
+            <div className="print:break-inside-avoid">
             {/* Top Services */}
             {campus.topServices.length > 0 && (
               <Card className="mb-6">
@@ -499,10 +499,12 @@ const Report = () => {
                   </div>
                 </CardContent>
               </Card>
-            )}
+              )}
+            </div>
           </div>
         ))}
 
+        
         {/* Key Insights */}
         <Separator className="my-8" />
         <Card>
