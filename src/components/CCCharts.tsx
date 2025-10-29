@@ -1,4 +1,4 @@
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,LabelList , Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { CC1Distribution, CC2Distribution, CC3Distribution } from "@/utils/reportAnalytics";
 
 const COLORS = {
@@ -31,10 +31,11 @@ export const CC1AwarenessChart = ({ data }: CC1AwarenessChartProps) => {
   return (
     <div className="w-full h-80">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
+        <BarChart data={chartData} margin={{top:30}}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" angle={-20} textAnchor="end" height={100} interval={0} fontSize={12} />
           <YAxis label={{ value: 'Number of Responses', angle: -90, position: 'insideLeft' }} />
+
           <Tooltip 
             formatter={(value: number) => [`${value} responses (${((value / total) * 100).toFixed(1)}%)`, '']}
           />
@@ -42,6 +43,11 @@ export const CC1AwarenessChart = ({ data }: CC1AwarenessChartProps) => {
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
+            <LabelList 
+              dataKey="value" 
+              position="top" 
+              formatter={(value: number) => `${((value / total) * 100).toFixed(1)}%`} 
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -74,23 +80,30 @@ export const CC2VisibilityChart = ({ data }: CC2VisibilityChartProps) => {
   return (
     <div className="w-full h-80">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} layout="horizontal">
+        <BarChart data={chartData} margin={{top:30}}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" label={{ value: 'Number of Responses', position: 'insideBottom', offset: -5 }} />
-          <YAxis type="category" dataKey="name" width={150} fontSize={12} />
+          <XAxis dataKey="name" angle={-20} textAnchor="end" height={100} interval={0} fontSize={12} />
+          <YAxis label={{ value: 'Number of Responses', angle: -90, position: 'insideLeft' }} />
           <Tooltip 
             formatter={(value: number) => [`${value} responses (${((value / total) * 100).toFixed(1)}%)`, '']}
           />
-          <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+          
+          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
+            <LabelList 
+              dataKey="value" 
+              position="top" 
+              formatter={(value: number) => `${((value / total) * 100).toFixed(1)}%`} 
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 };
+
 
 interface CC3HelpfulnessChartProps {
   data: CC3Distribution;
