@@ -177,7 +177,7 @@ const Index = () => {
               </Button>
               <Button onClick={handleExport} className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
                 <Download className="w-4 h-4" />
-                <span className="hidden lg:inline">Export to Excel ({submissions.length})</span>
+                <span className="hidden lg:inline">Export to CSV ({submissions.length})</span>
                 <span className="hidden sm:inline lg:hidden">Export ({submissions.length})</span>
                 <span className="sm:hidden">Export</span>
               </Button>
