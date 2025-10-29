@@ -4,9 +4,10 @@ import { EncodingForm } from "@/components/EncodingForm";
 import { Button } from "@/components/ui/button";
 import { Download, BarChart3, Trash2, Upload } from "lucide-react";
 import { FormData } from "@/types/form";
-import { exportToExcel } from "@/utils/excelExport";
+import { generateExcelBlob } from "@/utils/excelExport"; // ✅ keep only this
 import { parseCSVToFormData, getExpectedCSVColumns } from "@/utils/csvImport";
 import { useToast } from "@/hooks/use-toast";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,9 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
+import { ExportToExcelModal } from "@/components/ExportToExcelModal"; // ✅ corrected import path
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // ✅ States
   const [submissions, setSubmissions] = useState<FormData[]>([]);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [clearConfirmation, setClearConfirmation] = useState("");
@@ -30,19 +35,24 @@ const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ✅ Export modal states
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [excelBlob, setExcelBlob] = useState<Blob | null>(null);
+
+  // ✅ Load saved data
   useEffect(() => {
     const saved = localStorage.getItem("encodedData");
-    if (saved) {
-      setSubmissions(JSON.parse(saved));
-    }
+    if (saved) setSubmissions(JSON.parse(saved));
   }, []);
 
+  // ✅ Handle form submission
   const handleSubmit = (data: FormData) => {
     const updatedSubmissions = [...submissions, data];
     setSubmissions(updatedSubmissions);
     localStorage.setItem("encodedData", JSON.stringify(updatedSubmissions));
   };
 
+  // ✅ Handle export to Excel
   const handleExport = () => {
     if (submissions.length === 0) {
       toast({
@@ -52,13 +62,13 @@ const Index = () => {
       });
       return;
     }
-    exportToExcel(submissions);
-    toast({
-      title: "Success",
-      description: "Data exported to Excel successfully",
-    });
+
+    const blob = generateExcelBlob(submissions);
+    setExcelBlob(blob);
+    setShowExportModal(true);
   };
 
+  // ✅ Handle report navigation
   const handleGenerateReport = () => {
     if (submissions.length === 0) {
       toast({
@@ -71,6 +81,7 @@ const Index = () => {
     navigate("/report");
   };
 
+  // ✅ Handle clear data
   const handleClearData = () => {
     if (clearConfirmation === "Yes") {
       localStorage.removeItem("encodedData");
@@ -91,9 +102,10 @@ const Index = () => {
     }
   };
 
+  // ✅ Handle CSV file select
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === "text/csv") {
+    if (file && file.name.endsWith(".csv")) {
       setSelectedFile(file);
       setShowImportDialog(true);
     } else {
@@ -103,11 +115,10 @@ const Index = () => {
         variant: "destructive",
       });
     }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // ✅ Handle import
   const handleImportData = async () => {
     if (importConfirmation !== "Yes") {
       toast({
@@ -123,15 +134,16 @@ const Index = () => {
     try {
       const text = await selectedFile.text();
       const importedData = parseCSVToFormData(text);
-      
+
       const mergedData = [...submissions, ...importedData];
       setSubmissions(mergedData);
       localStorage.setItem("encodedData", JSON.stringify(mergedData));
-      
+
       setShowImportDialog(false);
       setImportConfirmation("");
       setSelectedFile(null);
-      
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
       toast({
         title: "Success",
         description: `Imported ${importedData.length} entries successfully`,
@@ -147,6 +159,7 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Header */}
       <header className="bg-[#800000] text-white py-3 shadow-lg flex-shrink-0">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -159,33 +172,35 @@ const Index = () => {
                 <BarChart3 className="w-4 h-4" />
                 <span className="hidden sm:inline">Generate Report</span>
               </Button>
-              <Button 
-                onClick={() => setShowClearDialog(true)} 
-                variant="outline" 
-                className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90"
-              >
+              <Button onClick={() => setShowClearDialog(true)} variant="outline" className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
                 <Trash2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Clear Data</span>
               </Button>
-              <Button 
-                onClick={() => fileInputRef.current?.click()} 
-                variant="outline" 
-                className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90"
-              >
+              <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Import CSV</span>
               </Button>
               <Button onClick={handleExport} className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
                 <Download className="w-4 h-4" />
-                <span className="hidden lg:inline">Export to CSV ({submissions.length})</span>
+                <span className="hidden lg:inline">View / Download Data ({submissions.length})</span>
                 <span className="hidden sm:inline lg:hidden">Export ({submissions.length})</span>
                 <span className="sm:hidden">Export</span>
               </Button>
+
+              {/* ✅ Export Modal */}
+              <ExportToExcelModal
+                open={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                blob={excelBlob}
+                data={submissions}  // ✅ pass data for preview
+              />
+
             </div>
           </div>
         </div>
       </header>
-      
+
+      {/* Main */}
       <main className="container mx-auto px-4 py-3 flex-1 flex flex-col overflow-hidden">
         <input
           ref={fileInputRef}
@@ -195,6 +210,7 @@ const Index = () => {
           className="hidden"
         />
 
+        {/* Clear Data Dialog */}
         <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -217,14 +233,13 @@ const Index = () => {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Import Dialog */}
         <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Import Data from CSV</AlertDialogTitle>
               <AlertDialogDescription className="space-y-3">
-                <div>
-                  The CSV file should have the following column arrangement:
-                </div>
+                <div>The CSV file should have the following column arrangement:</div>
                 <div className="bg-muted p-3 rounded text-xs font-mono break-all">
                   {getExpectedCSVColumns()}
                 </div>
@@ -240,15 +255,20 @@ const Index = () => {
               className="my-4"
             />
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => {
-                setImportConfirmation("");
-                setSelectedFile(null);
-              }}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel
+                onClick={() => {
+                  setImportConfirmation("");
+                  setSelectedFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              >
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction onClick={handleImportData}>Import Data</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        
+
         <div className="flex-1 overflow-hidden">
           <EncodingForm onSubmit={handleSubmit} />
         </div>
