@@ -142,8 +142,8 @@ export const TopServicesChart = ({ data }: TopServicesChartProps) => {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="service" type="category" width={150} />
+          <XAxis type="number" interval={0} fontSize={10} />
+          <YAxis dataKey="service" type="category" width={150} interval={0} fontSize={10} />
           <Tooltip />
           <Bar dataKey="count" fill="#82ca9d">
             <LabelList 
@@ -223,7 +223,7 @@ export const SatisfactionComparisonChart = ({ data, title, categoryName }: Satis
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{top:30}}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+          <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} interval={0} fontSize={10} />
           <YAxis domain={[0, 5]} />
           <Tooltip />
           <Legend />
@@ -264,7 +264,7 @@ export const OfficePerformanceChart = ({ data }: OfficePerformanceProps) => {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
+          <XAxis type="number" interval={0} fontSize={10} />
           <YAxis dataKey="office" type="category" width={150} />
           <Tooltip />
           <Legend />
