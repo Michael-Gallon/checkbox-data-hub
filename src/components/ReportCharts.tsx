@@ -107,7 +107,16 @@ export const AverageChart = ({ data, title }: AverageChartProps) => {
           <YAxis domain={[0, 5]} />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="average" stroke="#8884d8" strokeWidth={2} />
+          <Line type="monotone" dataKey="average" stroke="#8884d8" strokeWidth={2}>
+            <LabelList
+              dataKey="average"
+              position="top"
+              style={{
+                fontSize: 9,
+                fill: "#000",
+              }}
+            />
+          </Line>
         </LineChart>
       </ResponsiveContainer>
     </div>
