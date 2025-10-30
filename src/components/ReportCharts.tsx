@@ -1,12 +1,14 @@
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, LabelList, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { CC1Distribution, CC2Distribution, CC3Distribution } from "@/utils/reportAnalytics";
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#a78bfa', '#f472b6', '#fb923c', '#34d399'];
+
 
 interface DistributionChartProps {
   data: Record<string, number>;
   title: string;
   type?: "bar" | "pie";
+  layout?: "horizontal" | "vertical";
 }
 
 export const DistributionChart = ({ data, title, type = "bar" }: DistributionChartProps) => {
@@ -54,12 +56,22 @@ export const DistributionChart = ({ data, title, type = "bar" }: DistributionCha
     <div className="w-full h-80">
       <h4 className="text-sm font-semibold mb-4">{title}</h4>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
+        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-          <YAxis />
+          <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} tick={{ fontSize: 10 }} interval={0}/>
+          <YAxis tick={{ fontSize: 10 }} />
           <Tooltip />
-          <Bar dataKey="value" fill="#8884d8" />
+          <Bar dataKey="value" fill="#8884d8">
+            <LabelList 
+            dataKey="value" 
+              position="top"
+              style={{
+                fontSize: 9,
+                fill: "#000", // visible when printed
+              }}
+            />
+          </Bar>
+          
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -124,7 +136,17 @@ export const TopServicesChart = ({ data }: TopServicesChartProps) => {
           <XAxis type="number" />
           <YAxis dataKey="service" type="category" width={150} />
           <Tooltip />
-          <Bar dataKey="count" fill="#82ca9d" />
+          <Bar dataKey="count" fill="#82ca9d">
+            <LabelList 
+              dataKey="count" 
+              position="right"
+              style={{
+                fontSize: 9,
+                fill: "#000", // visible when printed
+              }}
+            />
+          </Bar>
+
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -190,14 +212,24 @@ export const SatisfactionComparisonChart = ({ data, title, categoryName }: Satis
     <div className="w-full h-80">
       <h4 className="text-sm font-semibold mb-4">{title}</h4>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
+        <BarChart data={chartData} margin={{top:30}}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
           <YAxis domain={[0, 5]} />
           <Tooltip />
           <Legend />
-          <Bar dataKey="CC Rating" fill="#8884d8" />
-          <Bar dataKey="SQD Rating" fill="#82ca9d" />
+          {/* <Bar dataKey="CC Rating" fill="#8884d8" /> */}
+          <Bar dataKey="SQD Rating" fill="#3b82f6" >
+            <LabelList
+              dataKey="SQD Rating"
+              position="top"
+              style={{
+                fontSize: 9,
+                fill: "#000", // visible when printed
+              }}
+            />
+          </Bar>
+          
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -227,9 +259,17 @@ export const OfficePerformanceChart = ({ data }: OfficePerformanceProps) => {
           <YAxis dataKey="office" type="category" width={150} />
           <Tooltip />
           <Legend />
-          <Bar dataKey="count" fill="#8884d8" name="Responses" />
-          <Bar dataKey="avgCC" fill="#82ca9d" name="Avg CC" />
-          <Bar dataKey="avgSQD" fill="#ffc658" name="Avg SQD" />
+          <Bar dataKey="count" fill="#8884d8" name="Responses">
+            <LabelList 
+            dataKey="count"
+              position="right"
+              style={{
+                fontSize: 9,
+                fill: "#000", // visible when printed
+              }}
+            />
+          </Bar>
+          {/* <Bar dataKey="avgSQD" fill="#ffc658" name="Avg SQD" /> */}
         </BarChart>
       </ResponsiveContainer>
     </div>
