@@ -15,8 +15,8 @@ const Report = () => {
   const [allData, setAllData] = useState<FormData[]>([]);
   const [campusMetrics, setCampusMetrics] = useState<CampusMetrics[]>([]);
   const [overallMetrics, setOverallMetrics] = useState<any>(null);
-  const [selectedCampus, setSelectedCampus] = useState<string>("all");
-  const [selectedOffice, setSelectedOffice] = useState<string>("all");
+  const [selectedCampus, setSelectedCampus] = useState<string>("All Campuses");
+  const [selectedOffice, setSelectedOffice] = useState<string>("All Offices");
   const [availableCampuses, setAvailableCampuses] = useState<string[]>([]);
   const [availableOffices, setAvailableOffices] = useState<string[]>([]);
 
@@ -43,10 +43,10 @@ const Report = () => {
     
     // Filter data based on selections
     let filteredData = allData;
-    if (selectedCampus !== "all") {
+    if (selectedCampus !== "All Campuses") {
       filteredData = filteredData.filter(d => d.campus === selectedCampus);
     }
-    if (selectedOffice !== "all") {
+    if (selectedOffice !== "All Offices") {
       filteredData = filteredData.filter(d => d.office === selectedOffice);
     }
     
@@ -116,7 +116,7 @@ const Report = () => {
                     <SelectValue placeholder="Select campus" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Campuses</SelectItem>
+                    <SelectItem value="All Campuses">All Campuses</SelectItem>
                     {availableCampuses.map(campus => (
                       <SelectItem key={campus} value={campus}>{campus}</SelectItem>
                     ))}
@@ -130,7 +130,7 @@ const Report = () => {
                     <SelectValue placeholder="Select office" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Offices</SelectItem>
+                    <SelectItem value="All Offices">All Offices</SelectItem>
                     {availableOffices.map(office => (
                       <SelectItem key={office} value={office}>{office}</SelectItem>
                     ))}
@@ -144,18 +144,14 @@ const Report = () => {
         {/* Executive Summary */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl">Executive Summary</CardTitle>
-            <CardDescription>Overall metrics across all campuses</CardDescription>
+            <CardTitle className="text-2xl">Summary Report</CardTitle>
+            <CardDescription>Overall metrics for {selectedCampus} { selectedOffice}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary">{overallMetrics.totalResponses}</div>
                 <div className="text-sm text-muted-foreground mt-2">Total Responses</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">{overallMetrics.campusCount}</div>
-                <div className="text-sm text-muted-foreground mt-2">Campuses</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary">
@@ -189,18 +185,20 @@ const Report = () => {
         {campusMetrics.map((campus, index) => (
           <div key={campus.campus} className="mb-12">
             {index > 0 && <Separator className="my-8" />}
-            
-            <h2 className="text-3xl font-bold mb-6 text-primary">{campus.campus}</h2>
-            
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Campus Overview</CardTitle>
-                <CardDescription>{campus.totalResponses} total responses collected</CardDescription>
-              </CardHeader>
-            </Card>
+
+            {selectedCampus === "All Campuses" && selectedOffice === "All Offices" ? (
+              <h2 className="text-3xl font-bold mb-2 text-primary">Overall</h2>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold mb-2 text-primary">{selectedCampus}</h2>
+                <h3 className="text-3xl mb-6 text-primary">{selectedOffice}</h3>
+              </>
+            )}
+
 
             {/* Demographics */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
+              
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Client Type Distribution</CardTitle>
@@ -214,18 +212,20 @@ const Report = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Sex Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DistributionChart 
-                    data={campus.sexDistribution} 
-                    title="" 
-                    type="pie"
-                  />
-                </CardContent>
-              </Card>
+              <div className="print-section">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Sex Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DistributionChart 
+                      data={campus.sexDistribution} 
+                      title="" 
+                      type="pie"
+                    />
+                  </CardContent>
+                </Card>
+              </div>
 
               <Card>
                 <CardHeader>
@@ -239,7 +239,8 @@ const Report = () => {
                   />
                 </CardContent>
               </Card>
-
+              
+              {selectedOffice === "All Offices" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Office Distribution</CardTitle>
@@ -247,12 +248,15 @@ const Report = () => {
                 <CardContent>
                   <DistributionChart 
                     data={campus.officeDistribution} 
+                    layout="vertical"
                     title="" 
                     type="bar"
                   />
                 </CardContent>
-              </Card>
+                </Card>
+                )}
             </div>
+            
 
             {/* Citizen's Charter Analysis */}
             <Card className="mb-6">
@@ -395,18 +399,7 @@ const Report = () => {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Office Performance */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Office Performance Comparison</CardTitle>
-                  <CardDescription>Response volume and satisfaction metrics by office</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <OfficePerformanceChart data={campus.responseRateByOffice} />
-                </CardContent>
-              </Card>
-
+              
               {/* Demographic Satisfaction Analysis */}
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <Card>
@@ -453,7 +446,7 @@ const Report = () => {
             )}
 
             {/* Comments and Suggestions - Show all when office filter is applied */}
-            {selectedOffice !== "all" && (
+            {selectedOffice !== "All Offices" && (
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="text-lg">Comments & Suggestions</CardTitle>
