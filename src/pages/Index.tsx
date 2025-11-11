@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { EncodingForm } from "@/components/EncodingForm";
 import { Button } from "@/components/ui/button";
-import { Download, BarChart3, Trash2, Upload } from "lucide-react";
+import { Download, BarChart3, Trash2, Upload, Table } from "lucide-react";
 import { FormData } from "@/types/form";
 import { generateExcelBlob } from "@/utils/excelExport"; // ✅ keep only this
 import { parseCSVToFormData, getExpectedCSVColumns } from "@/utils/csvImport";
@@ -171,6 +171,10 @@ const Index = () => {
               <Button onClick={handleGenerateReport} variant="outline" className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
                 <BarChart3 className="w-4 h-4" />
                 <span className="hidden sm:inline">Generate Report</span>
+              </Button>
+              <Button onClick={() => navigate("/tabular-report")} variant="outline" className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
+                <Table className="w-4 h-4" />
+                <span className="hidden sm:inline">Tabular Report</span>
               </Button>
               <Button onClick={() => setShowClearDialog(true)} variant="outline" className="gap-2 h-9 text-sm bg-white text-[#800000] hover:bg-white/90">
                 <Trash2 className="w-4 h-4" />
