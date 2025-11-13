@@ -9,13 +9,11 @@ import { FormData } from "@/types/form";
 import {
   generateConsolidatedSQDTable,
   generateExternalServicesTable,
-  generateClientTypeBreakdown,
   generateDemographicDistribution,
   generateServiceUtilization,
   generateCampusComparison,
   type ConsolidatedSQDRow,
   type ExternalServicesRow,
-  type ClientTypeRow,
   type DemographicRow,
   type ServiceUtilizationRow,
   type CampusPerformanceRow,
@@ -33,7 +31,6 @@ const TabularReport = () => {
   // Table data states
   const [consolidatedSQD, setConsolidatedSQD] = useState<ConsolidatedSQDRow[]>([]);
   const [externalServices, setExternalServices] = useState<ExternalServicesRow[]>([]);
-  const [clientTypeBreakdown, setClientTypeBreakdown] = useState<ClientTypeRow[]>([]);
   const [demographics, setDemographics] = useState<{ ageGroup: DemographicRow[]; sex: DemographicRow[] }>({
     ageGroup: [],
     sex: [],
@@ -89,7 +86,6 @@ const TabularReport = () => {
   const generateAllTables = (data: FormData[]) => {
     setConsolidatedSQD(generateConsolidatedSQDTable(data));
     setExternalServices(generateExternalServicesTable(data, transactionInputs));
-    setClientTypeBreakdown(generateClientTypeBreakdown(data));
     setDemographics(generateDemographicDistribution(data));
     setServiceUtilization(generateServiceUtilization(data));
     setCampusComparison(generateCampusComparison(data));
@@ -323,48 +319,10 @@ const TabularReport = () => {
           </CardContent>
         </Card>
 
-        {/* Table 3: Client Type and Demographic Breakdown */}
+        {/* Table 3: Demographic Distribution */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Table 3: Client Type and Demographic Breakdown</CardTitle>
-            <CardDescription>
-              Distribution of clients by customer type with average satisfaction scores
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer Type</TableHead>
-                    <TableHead className="text-right">External Clients</TableHead>
-                    <TableHead className="text-right">Internal Clients</TableHead>
-                    <TableHead className="text-right">Overall Clients</TableHead>
-                    <TableHead className="text-right">Avg SQD (1-8)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientTypeBreakdown.map((row, index) => (
-                    <TableRow key={index} className={row.customerType === 'TOTAL' ? 'font-bold bg-muted' : ''}>
-                      <TableCell className="font-medium">{row.customerType}</TableCell>
-                      <TableCell className="text-right">{row.externalClients}</TableCell>
-                      <TableCell className="text-right">{row.internalClients}</TableCell>
-                      <TableCell className="text-right">{row.overallClients}</TableCell>
-                      <TableCell className={`text-right ${getRatingColor(row.avgSQD)}`}>
-                        {row.avgSQD}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Table 4: Demographic Distribution */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Table 4: Demographic Distribution by Age Group and Sex</CardTitle>
+            <CardTitle>Table 3: Demographic Distribution by Age Group and Sex</CardTitle>
             <CardDescription>
               Response distribution and satisfaction levels across demographics
             </CardDescription>
@@ -430,10 +388,10 @@ const TabularReport = () => {
           </CardContent>
         </Card>
 
-        {/* Table 5: Service Utilization and Satisfaction Analysis */}
+        {/* Table 4: Service Utilization and Satisfaction Analysis */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Table 5: Service Utilization and Satisfaction Analysis</CardTitle>
+            <CardTitle>Table 4: Service Utilization and Satisfaction Analysis</CardTitle>
             <CardDescription>
               Top services by usage frequency with satisfaction metrics
             </CardDescription>
@@ -466,11 +424,11 @@ const TabularReport = () => {
           </CardContent>
         </Card>
 
-        {/* Table 6: Campus-Level Performance Comparison */}
+        {/* Table 5: Campus-Level Performance Comparison */}
         {selectedCampus === "All Campuses" && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Table 6: Campus-Level Performance Comparison</CardTitle>
+              <CardTitle>Table 5: Campus-Level Performance Comparison</CardTitle>
               <CardDescription>
                 Side-by-side comparison of key performance indicators across campuses
               </CardDescription>
