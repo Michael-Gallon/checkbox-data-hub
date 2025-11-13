@@ -283,7 +283,7 @@ const TabularReport = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Office</TableHead>
-                    <TableHead className="text-right">Total Transactions</TableHead>
+                    <TableHead className="text-right">Samples</TableHead>
                     <TableHead className="text-right">Total Responses</TableHead>
                     <TableHead className="text-right">Response Rate</TableHead>
                     <TableHead className="text-right">Mean Rating</TableHead>
