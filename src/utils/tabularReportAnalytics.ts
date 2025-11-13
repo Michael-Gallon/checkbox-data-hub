@@ -75,7 +75,10 @@ export interface ExternalServicesRow {
   meanRating: string;
 }
 
-export function generateExternalServicesTable(data: FormData[]): ExternalServicesRow[] {
+export function generateExternalServicesTable(
+  data: FormData[], 
+  transactionInputs?: Record<string, number>
+): ExternalServicesRow[] {
   const officeGroups = data.reduce((acc, item) => {
     if (!acc[item.office]) {
       acc[item.office] = [];
@@ -87,14 +90,13 @@ export function generateExternalServicesTable(data: FormData[]): ExternalService
   const results: ExternalServicesRow[] = [];
 
   Object.entries(officeGroups).forEach(([office, items]) => {
-    const totalTransactions = items.length;
+    // Total responses = actual survey data we have
+    const totalResponses = items.length;
     
-    // Count responses with valid SQD ratings
-    const validResponses = items.filter(item => {
-      const sqd0 = item.sqd0;
-      return sqd0 && sqd0 !== 'NA';
-    });
-    const totalResponses = validResponses.length;
+    // Total transactions = user input OR default to totalResponses
+    const totalTransactions = transactionInputs?.[office] ?? totalResponses;
+    
+    // Calculate response rate
     const responseRate = totalTransactions > 0 
       ? ((totalResponses / totalTransactions) * 100).toFixed(1)
       : '0.0';
@@ -115,7 +117,7 @@ export function generateExternalServicesTable(data: FormData[]): ExternalService
     let totalRating = 0;
     let ratingCount = 0;
 
-    validResponses.forEach(item => {
+    items.forEach(item => {
       sqdKeys.forEach(key => {
         const value = item[key as keyof FormData] as string;
         if (value && value !== 'NA') {
@@ -136,8 +138,8 @@ export function generateExternalServicesTable(data: FormData[]): ExternalService
     });
   });
 
-  // Sort by total transactions descending
-  return results.sort((a, b) => b.totalTransactions - a.totalTransactions);
+  // Sort by total responses descending
+  return results.sort((a, b) => b.totalResponses - a.totalResponses);
 }
 
 // Table 3: Client Type and Demographic Breakdown

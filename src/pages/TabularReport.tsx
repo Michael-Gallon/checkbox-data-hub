@@ -40,6 +40,7 @@ const TabularReport = () => {
   });
   const [serviceUtilization, setServiceUtilization] = useState<ServiceUtilizationRow[]>([]);
   const [campusComparison, setCampusComparison] = useState<CampusPerformanceRow[]>([]);
+  const [transactionInputs, setTransactionInputs] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const saved = localStorage.getItem("encodedData");
@@ -52,6 +53,12 @@ const TabularReport = () => {
       const offices = Array.from(new Set(data.map(d => d.office))).sort();
       setAvailableCampuses(campuses);
       setAvailableOffices(offices);
+
+      // Load saved transaction inputs
+      const savedInputs = localStorage.getItem("transactionInputs");
+      if (savedInputs) {
+        setTransactionInputs(JSON.parse(savedInputs));
+      }
 
       // Generate initial table data
       generateAllTables(data);
@@ -71,15 +78,29 @@ const TabularReport = () => {
 
     setFilteredData(filtered);
     generateAllTables(filtered);
-  }, [selectedCampus, selectedOffice, allData]);
+  }, [selectedCampus, selectedOffice, allData, transactionInputs]);
+
+  useEffect(() => {
+    if (Object.keys(transactionInputs).length > 0) {
+      localStorage.setItem("transactionInputs", JSON.stringify(transactionInputs));
+    }
+  }, [transactionInputs]);
 
   const generateAllTables = (data: FormData[]) => {
     setConsolidatedSQD(generateConsolidatedSQDTable(data));
-    setExternalServices(generateExternalServicesTable(data));
+    setExternalServices(generateExternalServicesTable(data, transactionInputs));
     setClientTypeBreakdown(generateClientTypeBreakdown(data));
     setDemographics(generateDemographicDistribution(data));
     setServiceUtilization(generateServiceUtilization(data));
     setCampusComparison(generateCampusComparison(data));
+  };
+
+  const handleTransactionInputChange = (office: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setTransactionInputs(prev => ({
+      ...prev,
+      [office]: numValue
+    }));
   };
 
   const handlePrint = () => {
@@ -250,7 +271,10 @@ const TabularReport = () => {
           <CardHeader>
             <CardTitle>Table 2: External Services Performance Summary</CardTitle>
             <CardDescription>
-              Office-level transaction metrics and satisfaction ratings
+              Office-level transaction metrics and satisfaction ratings. 
+              <span className="text-yellow-600 dark:text-yellow-400 font-semibold"> 
+                ⚠️ Enter actual transaction counts to calculate response rates
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -269,8 +293,17 @@ const TabularReport = () => {
                   {externalServices.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{row.office}</TableCell>
-                      <TableCell className="text-right">{row.totalTransactions}</TableCell>
-                      <TableCell className="text-right">{row.totalResponses}</TableCell>
+                      <TableCell className="text-right">
+                        <input
+                          type="number"
+                          min="1"
+                          value={transactionInputs[row.office] ?? row.totalTransactions}
+                          onChange={(e) => handleTransactionInputChange(row.office, e.target.value)}
+                          className="w-24 px-2 py-1 border border-input rounded text-right bg-background focus:outline-none focus:ring-2 focus:ring-ring print:border-0 print:bg-transparent print:p-0"
+                          placeholder="Enter"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{row.totalResponses}</TableCell>
                       <TableCell className={`text-right ${getPerformanceColor(row.responseRate)}`}>
                         {row.responseRate}%
                       </TableCell>
@@ -282,6 +315,11 @@ const TabularReport = () => {
                 </TableBody>
               </Table>
             </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              <strong>Note:</strong> Total Transactions is editable. Enter the actual number of transactions 
+              that occurred at each office. Total Responses shows the survey data collected. 
+              Response Rate = (Total Responses ÷ Total Transactions) × 100%
+            </p>
           </CardContent>
         </Card>
 
