@@ -164,7 +164,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-xl font-bold">Checkbox Encode App</h1>
+              <h1 className="text-base font-bold">Web-based CSM Encoding with Statistical Report</h1>
               <p className="text-xs mt-1 opacity-90">Monthly Data Encoding and Analysis</p>
             </div>
             <div className="flex gap-2 flex-wrap">
