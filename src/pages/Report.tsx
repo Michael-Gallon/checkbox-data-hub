@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Table } from "lucide-react";
+import { ArrowLeft, Download, Table, AlertTriangle } from "lucide-react";
 import { FormData } from "@/types/form";
 import { analyzeByCampus, calculateOverallMetrics, CampusMetrics, calculateAwarenessRate, calculateVisibilityScore, calculateHelpfulnessRate, calculateCC1Insight, calculateCC2Insight, calculateCC3Insight } from "@/utils/reportAnalytics";
 import { DistributionChart, AverageChart, TopServicesChart, TimeSeriesChart, SatisfactionComparisonChart, OfficePerformanceChart } from "@/components/ReportCharts";
@@ -87,10 +87,14 @@ const Report = () => {
             <h1 className="text-2xl font-bold">Statistical Report</h1>
             <p className="text-sm opacity-90">Comprehensive Data Analysis</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="secondary" onClick={() => navigate("/tabular-report")}>
               <Table className="w-4 h-4 mr-2" />
-              Tabular Report
+              Tabular
+            </Button>
+            <Button variant="secondary" onClick={() => navigate("/dissatisfaction-report")}>
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Dissatisfaction
             </Button>
             <Button variant="secondary" onClick={handlePrint}>
               <Download className="w-4 h-4 mr-2" />
