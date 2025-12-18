@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, BarChart3 } from "lucide-react";
+import { ArrowLeft, Download, BarChart3, AlertTriangle } from "lucide-react";
 import { FormData } from "@/types/form";
 import {
   generateConsolidatedSQDTable,
@@ -146,10 +146,14 @@ const TabularReport = () => {
             <h1 className="text-2xl font-bold">Tabular Report</h1>
             <p className="text-sm opacity-90">Statistical Analysis in Tables</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="secondary" onClick={() => navigate("/report")}>
               <BarChart3 className="w-4 h-4 mr-2" />
               Graphical Report
+            </Button>
+            <Button variant="secondary" onClick={() => navigate("/dissatisfaction-report")}>
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Dissatisfaction
             </Button>
             <Button variant="secondary" onClick={handlePrint}>
               <Download className="w-4 h-4 mr-2" />
