@@ -26,9 +26,9 @@ const Report = () => {
       const data: FormData[] = JSON.parse(saved);
       setAllData(data);
       
-      // Extract unique campuses and offices
-      const campuses = Array.from(new Set(data.map(d => d.campus))).sort();
-      const offices = Array.from(new Set(data.map(d => d.office))).sort();
+      // Extract unique campuses and offices (filter out empty strings)
+      const campuses = Array.from(new Set(data.map(d => d.campus))).filter(c => c && c.trim() !== '').sort();
+      const offices = Array.from(new Set(data.map(d => d.office))).filter(o => o && o.trim() !== '').sort();
       setAvailableCampuses(campuses);
       setAvailableOffices(offices);
       
