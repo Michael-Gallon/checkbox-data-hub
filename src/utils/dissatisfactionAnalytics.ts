@@ -84,12 +84,12 @@ export interface TrendData {
 
 // Helper: Check if response is negative (D or SD)
 const isNegative = (value: string): boolean => {
-  return value === "2" || value === "1"; // 2=D, 1=SD
+  return value === "D" || value === "SD";
 };
 
 // Helper: Check if response is neutral
 const isNeutral = (value: string): boolean => {
-  return value === "3"; // ND
+  return value === "ND";
 };
 
 // Helper: Check if response has any dissatisfaction
@@ -191,11 +191,11 @@ export function generateSQDDissatisfactionTable(data: FormData[]): SQDDissatisfa
     
     data.forEach(row => {
       const value = row[field];
-      if (value && value !== "6") { // 6 = N/A
+      if (value && value !== "NA") { // NA = Not Applicable
         valid++;
-        if (value === "1") sd++;
-        else if (value === "2") d++;
-        else if (value === "3") nd++;
+        if (value === "SD") sd++;
+        else if (value === "D") d++;
+        else if (value === "ND") nd++;
       }
     });
     
@@ -251,14 +251,11 @@ export function generateOfficeDissatisfactionTable(data: FormData[]): OfficeDiss
       .slice(0, 3)
       .map(([field]) => field.toUpperCase());
     
-    // Calculate average rating for negative responses
-    let totalNegativeRatings = 0;
+    // Calculate count of negative responses
     let negativeCount = 0;
     dissatisfied.forEach(row => {
       sqdFields.forEach(field => {
-        const val = parseInt(row[field]);
-        if (val === 1 || val === 2) {
-          totalNegativeRatings += val;
+        if (row[field] === "D" || row[field] === "SD") {
           negativeCount++;
         }
       });
@@ -272,7 +269,7 @@ export function generateOfficeDissatisfactionTable(data: FormData[]): OfficeDiss
       totalResponses: records.length,
       dissatisfiedResponses: dissatisfied.length,
       dissatisfactionRate: ((dissatisfied.length / records.length) * 100).toFixed(2),
-      avgNegativeRating: negativeCount > 0 ? (totalNegativeRatings / negativeCount).toFixed(2) : "N/A",
+      avgNegativeRating: negativeCount > 0 ? `${negativeCount} ratings` : "N/A",
       topIssues,
       commentsCount,
     };
