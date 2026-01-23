@@ -4,17 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Table, AlertTriangle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, Download, Table2, AlertTriangle, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { FormData } from "@/types/form";
-import { analyzeByCampus, calculateOverallMetrics, CampusMetrics, calculateAwarenessRate, calculateVisibilityScore, calculateHelpfulnessRate, calculateCC1Insight, calculateCC2Insight, calculateCC3Insight } from "@/utils/reportAnalytics";
-import { DistributionChart, AverageChart, TopServicesChart, TimeSeriesChart, SatisfactionComparisonChart, OfficePerformanceChart } from "@/components/ReportCharts";
+import {
+  calculateSummaryStatistics,
+  calculateOfficeMetrics,
+  calculateDemographicBreakdown,
+  getScoreColor,
+  getScoreBgColor,
+  getInterpretation,
+  SQD_LABELS,
+  type SummaryStatistics,
+  type OfficeMetrics,
+  type DemographicBreakdown,
+} from "@/utils/artaScoring";
+import { DistributionChart } from "@/components/ReportCharts";
 import { CC1AwarenessChart, CC2VisibilityChart, CC3HelpfulnessChart } from "@/components/CCCharts";
+import { analyzeByCampus, CampusMetrics } from "@/utils/reportAnalytics";
 
 const Report = () => {
   const navigate = useNavigate();
   const [allData, setAllData] = useState<FormData[]>([]);
+  const [filteredData, setFilteredData] = useState<FormData[]>([]);
+  const [summary, setSummary] = useState<SummaryStatistics | null>(null);
+  const [officeMetrics, setOfficeMetrics] = useState<OfficeMetrics[]>([]);
   const [campusMetrics, setCampusMetrics] = useState<CampusMetrics[]>([]);
-  const [overallMetrics, setOverallMetrics] = useState<any>(null);
+  const [demographics, setDemographics] = useState<{
+    byClientType: DemographicBreakdown[];
+    bySex: DemographicBreakdown[];
+    byAgeGroup: DemographicBreakdown[];
+  }>({ byClientType: [], bySex: [], byAgeGroup: [] });
+  
   const [selectedCampus, setSelectedCampus] = useState<string>("All Campuses");
   const [selectedOffice, setSelectedOffice] = useState<string>("All Offices");
   const [availableCampuses, setAvailableCampuses] = useState<string[]>([]);
@@ -25,40 +46,59 @@ const Report = () => {
     if (saved) {
       const data: FormData[] = JSON.parse(saved);
       setAllData(data);
+      setFilteredData(data);
       
-      // Extract unique campuses and offices (filter out empty strings)
       const campuses = Array.from(new Set(data.map(d => d.campus))).filter(c => c && c.trim() !== '').sort();
       const offices = Array.from(new Set(data.map(d => d.office))).filter(o => o && o.trim() !== '').sort();
       setAvailableCampuses(campuses);
       setAvailableOffices(offices);
       
-      // Initial analysis with all data
-      setCampusMetrics(analyzeByCampus(data));
-      setOverallMetrics(calculateOverallMetrics(data));
+      generateAllMetrics(data);
     }
   }, []);
 
   useEffect(() => {
     if (allData.length === 0) return;
     
-    // Filter data based on selections
-    let filteredData = allData;
+    let filtered = allData;
     if (selectedCampus !== "All Campuses") {
-      filteredData = filteredData.filter(d => d.campus === selectedCampus);
+      filtered = filtered.filter(d => d.campus === selectedCampus);
     }
     if (selectedOffice !== "All Offices") {
-      filteredData = filteredData.filter(d => d.office === selectedOffice);
+      filtered = filtered.filter(d => d.office === selectedOffice);
     }
     
-    setCampusMetrics(analyzeByCampus(filteredData));
-    setOverallMetrics(calculateOverallMetrics(filteredData));
+    setFilteredData(filtered);
+    generateAllMetrics(filtered);
   }, [selectedCampus, selectedOffice, allData]);
+
+  const generateAllMetrics = (data: FormData[]) => {
+    setSummary(calculateSummaryStatistics(data));
+    setOfficeMetrics(calculateOfficeMetrics(data));
+    setCampusMetrics(analyzeByCampus(data));
+    setDemographics({
+      byClientType: calculateDemographicBreakdown(data, "clientType"),
+      bySex: calculateDemographicBreakdown(data, "sex"),
+      byAgeGroup: calculateDemographicBreakdown(data, "ageGroup"),
+    });
+  };
 
   const handlePrint = () => {
     window.print();
   };
 
-  if (!overallMetrics) {
+  const getInterpretationBadge = (level: string) => {
+    const colors: Record<string, string> = {
+      "Very High": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+      "High": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+      "Moderate": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+      "Low": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+      "Very Low": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+    };
+    return colors[level] || "bg-gray-100 text-gray-800";
+  };
+
+  if (!summary || allData.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
@@ -81,15 +121,16 @@ const Report = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <header className="bg-[#800000] text-white py-4 shadow-lg print:hidden">
-        <div className="container mx-auto px-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold">Statistical Report</h1>
-            <p className="text-sm opacity-90">Comprehensive Data Analysis</p>
+            <h1 className="text-2xl font-bold">Client Satisfaction Measurement Report</h1>
+            <p className="text-sm opacity-90">Consolidated Analysis (ARTA-Compliant)</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="secondary" onClick={() => navigate("/tabular-report")}>
-              <Table className="w-4 h-4 mr-2" />
+              <Table2 className="w-4 h-4 mr-2" />
               Tabular
             </Button>
             <Button variant="secondary" onClick={() => navigate("/dissatisfaction-report")}>
@@ -98,7 +139,7 @@ const Report = () => {
             </Button>
             <Button variant="secondary" onClick={handlePrint}>
               <Download className="w-4 h-4 mr-2" />
-              Print/Save PDF
+              Print/PDF
             </Button>
             <Button variant="outline" onClick={() => navigate("/")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -108,12 +149,21 @@ const Report = () => {
         </div>
       </header>
 
+      {/* Print Header */}
+      <div className="hidden print:block text-center py-6">
+        <h1 className="text-2xl font-bold">Client Satisfaction Measurement Report</h1>
+        <p className="text-muted-foreground">Consolidated Analysis</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Generated on {new Date().toLocaleDateString()}
+        </p>
+      </div>
+
       <main className="container mx-auto px-4 py-8">
         {/* Filters */}
         <Card className="mb-6 print:hidden">
           <CardHeader>
             <CardTitle>Report Filters</CardTitle>
-            <CardDescription>Filter the report by campus and/or office</CardDescription>
+            <CardDescription>Filter by campus and/or office</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
@@ -149,404 +199,538 @@ const Report = () => {
           </CardContent>
         </Card>
 
-        {/* Executive Summary */}
+        {/* I. Executive Summary */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl">Summary Report</CardTitle>
-            <CardDescription>Overall metrics for {selectedCampus} { selectedOffice}</CardDescription>
+            <CardTitle className="text-2xl">I. Executive Summary</CardTitle>
+            <CardDescription>
+              Overall metrics for {selectedCampus} - {selectedOffice}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">{overallMetrics.totalResponses}</div>
-                <div className="text-sm text-muted-foreground mt-2">Total Responses</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-3xl font-bold text-primary">{summary.totalResponses}</div>
+                <div className="text-sm text-muted-foreground mt-1">Total Responses</div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">
-                  {overallMetrics.overallAwarenessRate}%
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">Charter Awareness Rate</div>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-3xl font-bold text-primary">{summary.campusCount}</div>
+                <div className="text-sm text-muted-foreground mt-1">Campuses</div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">
-                  {overallMetrics.overallVisibilityScore}%
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">Easy Visibility Rate</div>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-3xl font-bold text-primary">{summary.officeCount}</div>
+                <div className="text-sm text-muted-foreground mt-1">Offices</div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">
-                  {overallMetrics.overallHelpfulnessRate}%
+              <div className={`text-center p-4 rounded-lg ${getScoreBgColor(summary.overallSQD)}`}>
+                <div className={`text-3xl font-bold ${getScoreColor(summary.overallSQD)}`}>
+                  {summary.overallSQD.toFixed(1)}%
                 </div>
-                <div className="text-sm text-muted-foreground mt-2">Helpfulness Rate</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">
-                  {overallMetrics.avgSQDSatisfaction.toFixed(2)}
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">Avg SQD Rating (out of 5)</div>
+                <div className="text-sm text-muted-foreground mt-1">Overall SQD Score</div>
               </div>
             </div>
+
+            {/* CC Summary Scores */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className={`p-4 rounded-lg border ${getScoreBgColor(summary.overallAwareness)}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm font-medium">CC1: Awareness</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(summary.awarenessInterpretation)}`}>
+                    {summary.awarenessInterpretation}
+                  </span>
+                </div>
+                <div className={`text-2xl font-bold ${getScoreColor(summary.overallAwareness)}`}>
+                  {summary.overallAwareness.toFixed(1)}%
+                </div>
+              </div>
+              <div className={`p-4 rounded-lg border ${getScoreBgColor(summary.overallVisibility)}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm font-medium">CC2: Visibility</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(summary.visibilityInterpretation)}`}>
+                    {summary.visibilityInterpretation}
+                  </span>
+                </div>
+                <div className={`text-2xl font-bold ${getScoreColor(summary.overallVisibility)}`}>
+                  {summary.overallVisibility.toFixed(1)}%
+                </div>
+              </div>
+              <div className={`p-4 rounded-lg border ${getScoreBgColor(summary.overallHelpfulness)}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm font-medium">CC3: Helpfulness</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(summary.helpfulnessInterpretation)}`}>
+                    {summary.helpfulnessInterpretation}
+                  </span>
+                </div>
+                <div className={`text-2xl font-bold ${getScoreColor(summary.overallHelpfulness)}`}>
+                  {summary.overallHelpfulness.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+
+            {/* Problem Areas Alert */}
+            {summary.problemAreas.length > 0 && (
+              <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="font-semibold text-red-800 dark:text-red-200">Areas Requiring Attention</span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {summary.problemAreas.map((area, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-sm">
+                      {area.area}: {area.score.toFixed(1)}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Campus-by-Campus Analysis */}
-        {campusMetrics.map((campus, index) => (
-          <div key={campus.campus} className="mb-12">
-            {index > 0 && <Separator className="my-8" />}
-
-            {selectedCampus === "All Campuses" && selectedOffice === "All Offices" ? (
-              <h2 className="text-3xl font-bold mb-2 text-primary">Overall</h2>
-            ) : (
-              <>
-                <h2 className="text-3xl font-bold mb-2 text-primary">{selectedCampus}</h2>
-                <h3 className="text-3xl mb-6 text-primary">{selectedOffice}</h3>
-              </>
-            )}
-
-
-            {/* Demographics */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Client Type Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
+        {/* II. Client Demographics */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl">II. Client Demographics</CardTitle>
+            <CardDescription>Distribution of respondents by demographic factors</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* By Client Type */}
+              <div>
+                <h4 className="font-semibold mb-3">By Client Type</h4>
+                {campusMetrics[0] && (
                   <DistributionChart 
-                    data={campus.clientTypeDistribution} 
+                    data={campusMetrics[0].clientTypeDistribution} 
                     title="" 
                     type="pie"
                   />
-                </CardContent>
-              </Card>
-
-              <div className="print-section">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Sex Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <DistributionChart 
-                      data={campus.sexDistribution} 
-                      title="" 
-                      type="pie"
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Age Group Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DistributionChart 
-                    data={campus.ageGroupDistribution} 
-                    title="" 
-                    type="bar"
-                  />
-                </CardContent>
-              </Card>
-              
-              {selectedOffice === "All Offices" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Office Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DistributionChart 
-                    data={campus.officeDistribution} 
-                    layout="vertical"
-                    title="" 
-                    type="bar"
-                  />
-                </CardContent>
-                </Card>
                 )}
-            </div>
-            
-
-            {/* Citizen's Charter Analysis */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Citizen's Charter Awareness & Effectiveness</CardTitle>
-                <CardDescription>
-                  Understanding how clients perceive and interact with the Citizen's Charter
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                {/* CC1: Awareness Analysis */}
-                <div>
-                  <h4 className="font-semibold mb-3 text-base">
-                    Charter Awareness Level
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    How familiar are clients with the Citizen's Charter before visiting?
-                  </p>
-                  <CC1AwarenessChart data={campus.ccDistributions.cc1} />
-                  
-                  
-                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
-                    <p className="text-sm">
-                      <strong className="text-blue-900 dark:text-blue-100">Key Insight:</strong>{" "}
-                      <span className="text-blue-800 dark:text-blue-200">
-                        {calculateCC1Insight(campus.ccDistributions.cc1)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* CC2: Visibility Analysis */}
-                <div>
-                  <h4 className="font-semibold mb-3 text-base">
-                    Charter Visibility Assessment
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    How easy is it for clients to find and see the Citizen's Charter?
-                  </p>
-                  <CC2VisibilityChart data={campus.ccDistributions.cc2} />
-                  
-                  <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
-                    <p className="text-sm">
-                      <strong className="text-amber-900 dark:text-amber-100">Key Insight:</strong>{" "}
-                      <span className="text-amber-800 dark:text-amber-200">
-                        {calculateCC2Insight(campus.ccDistributions.cc2)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* CC3: Helpfulness Analysis */}
-                <div>
-                  <h4 className="font-semibold mb-3 text-base">
-                    Charter Helpfulness Rating
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    To what extent did the Citizen's Charter help clients with their transaction?
-                  </p>
-                  <CC3HelpfulnessChart data={campus.ccDistributions.cc3} />
-                  
-                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
-                    <p className="text-sm">
-                      <strong className="text-green-900 dark:text-green-100">Key Insight:</strong>{" "}
-                      <span className="text-green-800 dark:text-green-200">
-                        {calculateCC3Insight(campus.ccDistributions.cc3)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Overall CC Summary Statistics */}
-                <div className="border-t pt-6 mt-6">
-                  <h4 className="font-semibold mb-4">Summary Statistics</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {calculateAwarenessRate(campus.ccDistributions.cc1)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Pre-existing Awareness Rate
-                      </div>
+                <div className="mt-4 space-y-2">
+                  {demographics.byClientType.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.value}</span>
+                      <span className="font-medium">{item.count} ({item.percentage.toFixed(1)}%)</span>
                     </div>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {calculateVisibilityScore(campus.ccDistributions.cc2)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Easy Visibility Rate
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {calculateHelpfulnessRate(campus.ccDistributions.cc3)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        High Helpfulness Rate
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {campus.totalResponses}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Total Responses
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Service Quality Dimensions */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Service Quality Dimensions (SQD) - Average Ratings</CardTitle>
-                <CardDescription>Scale: 1 (Strongly Disagree) to 5 (Strongly Agree)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AverageChart 
-                  data={campus.sqdAverages} 
-                  title=""
-                />
-              </CardContent>
-            </Card>
-
-            {/* Statistical Analysis Section */}
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold mb-4 text-primary">Statistical Analysis</h3>
-              
-              {/* Time Series */}
-              {campus.timeSeriesData.length > 0 && (
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Trend Analysis</CardTitle>
-                    <CardDescription>Response patterns and satisfaction trends over time</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <TimeSeriesChart data={campus.timeSeriesData} />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Demographic Satisfaction Analysis */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Satisfaction by Sex</CardTitle>
-                    <CardDescription>Gender-based satisfaction analysis</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SatisfactionComparisonChart 
-                      data={campus.satisfactionByDemographic.bySex}
-                      title=""
-                      categoryName="Sex"
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Satisfaction by Age Group</CardTitle>
-                    <CardDescription>Age-based satisfaction patterns</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SatisfactionComparisonChart 
-                      data={campus.satisfactionByDemographic.byAgeGroup}
-                      title=""
-                      categoryName="Age Group"
-                    />
-                  </CardContent>
-                </Card>
               </div>
-            </div>
-            <div className="print:break-inside-avoid">
-            {/* Top Services */}
-            {campus.topServices.length > 0 && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Most Requested Services</CardTitle>
-                  <CardDescription>Service utilization patterns</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TopServicesChart data={campus.topServices} />
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Comments and Suggestions - Show all when office filter is applied */}
-            {selectedOffice !== "All Offices" && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Comments & Suggestions</CardTitle>
-                  <CardDescription>Qualitative feedback from {selectedOffice}</CardDescription>
-                </CardHeader>
-                <CardContent>
-  {(() => {
-    const filteredComments = allData.filter(d => 
-      d.campus === campus.campus && 
-      d.office === selectedOffice && 
-      d.comments.trim() !== ""
-    );
+              {/* By Sex */}
+              <div>
+                <h4 className="font-semibold mb-3">By Sex</h4>
+                {campusMetrics[0] && (
+                  <DistributionChart 
+                    data={campusMetrics[0].sexDistribution} 
+                    title="" 
+                    type="pie"
+                  />
+                )}
+                <div className="mt-4 space-y-2">
+                  {demographics.bySex.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.value}</span>
+                      <span className="font-medium">{item.count} ({item.percentage.toFixed(1)}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-    return filteredComments.length > 0 ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredComments.map((entry, idx) => (
-          <div 
-            key={idx} 
-            className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r break-inside-avoid"
-          >
-            <div className="text-xs text-muted-foreground mb-1 flex justify-between">
-              <span>{new Date(entry.timestamp).toLocaleDateString()} - {entry.clientType}</span>
-              <span className="font-mono text-xs">{entry.documentNumber}</span>
-            </div>
-            <p className="text-sm">{entry.comments}</p>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        No comments available for this office.
-      </p>
-    );
-  })()}
-</CardContent>
-
-              </Card>
-              )}
-            </div>
-          </div>
-        ))}
-
-        
-        {/* Key Insights */}
-        <Separator className="my-8" />
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Key Insights & Recommendations</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">Citizen's Charter Effectiveness</h4>
-              <p className="text-sm text-muted-foreground">
-                Overall charter awareness stands at{" "}
-                <span className="font-semibold text-foreground">
-                  {overallMetrics.overallAwarenessRate}%
-                </span>
-                , with{" "}
-                <span className="font-semibold text-foreground">
-                  {overallMetrics.overallVisibilityScore}%
-                </span>
-                {" "}finding it easy to see and{" "}
-                <span className="font-semibold text-foreground">
-                  {overallMetrics.overallHelpfulnessRate}%
-                </span>
-                {" "}finding it helpful. Focus on improving visibility and pre-visit awareness to enhance charter effectiveness.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Service Quality</h4>
-              <p className="text-sm text-muted-foreground">
-                The Service Quality Dimensions average rating is{" "}
-                <span className="font-semibold text-foreground">
-                  {overallMetrics.avgSQDSatisfaction.toFixed(2)}/5.0
-                </span>
-                , suggesting {overallMetrics.avgSQDSatisfaction >= 4 ? "strong" : overallMetrics.avgSQDSatisfaction >= 3 ? "adequate" : "areas requiring improvement in"} service
-                quality across multiple dimensions.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Campus Comparison</h4>
-              <p className="text-sm text-muted-foreground">
-                Analysis shows varying response rates across {overallMetrics.campusCount} campuses.
-                Consider focusing improvement efforts on campuses with lower satisfaction scores
-                and replicating best practices from high-performing campuses.
-              </p>
+              {/* By Age Group */}
+              <div>
+                <h4 className="font-semibold mb-3">By Age Group</h4>
+                {campusMetrics[0] && (
+                  <DistributionChart 
+                    data={campusMetrics[0].ageGroupDistribution} 
+                    title="" 
+                    type="bar"
+                  />
+                )}
+                <div className="mt-4 space-y-2">
+                  {demographics.byAgeGroup.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.value}</span>
+                      <span className="font-medium">{item.count} ({item.percentage.toFixed(1)}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="text-center text-sm text-muted-foreground mt-8 print:mt-4">
-          Report generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+        {/* III. Citizen's Charter Results */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl">III. Citizen's Charter Results</CardTitle>
+            <CardDescription>
+              Assessment of Citizen's Charter awareness, visibility, and helpfulness
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* CC Summary Table */}
+            <div className="overflow-x-auto mb-8">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>CC Code</TableHead>
+                    <TableHead>Component</TableHead>
+                    <TableHead className="text-right">Score</TableHead>
+                    <TableHead>Interpretation</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">CC1</TableCell>
+                    <TableCell>Awareness</TableCell>
+                    <TableCell className={`text-right font-bold ${getScoreColor(summary.overallAwareness)}`}>
+                      {summary.overallAwareness.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(summary.awarenessInterpretation)}`}>
+                        {summary.awarenessInterpretation} Awareness
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">CC2</TableCell>
+                    <TableCell>Visibility</TableCell>
+                    <TableCell className={`text-right font-bold ${getScoreColor(summary.overallVisibility)}`}>
+                      {summary.overallVisibility.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(summary.visibilityInterpretation)}`}>
+                        {summary.visibilityInterpretation} Visibility
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">CC3</TableCell>
+                    <TableCell>Helpfulness</TableCell>
+                    <TableCell className={`text-right font-bold ${getScoreColor(summary.overallHelpfulness)}`}>
+                      {summary.overallHelpfulness.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(summary.helpfulnessInterpretation)}`}>
+                        {summary.helpfulnessInterpretation} Helpfulness
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* CC Distribution Charts */}
+            {campusMetrics[0] && (
+              <div className="grid md:grid-cols-3 gap-6">
+                <div>
+                  <h4 className="font-semibold mb-3">CC1: Awareness Distribution</h4>
+                  <CC1AwarenessChart data={campusMetrics[0].ccDistributions.cc1} />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-3">CC2: Visibility Distribution</h4>
+                  <CC2VisibilityChart data={campusMetrics[0].ccDistributions.cc2} />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-3">CC3: Helpfulness Distribution</h4>
+                  <CC3HelpfulnessChart data={campusMetrics[0].ccDistributions.cc3} />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* IV. Service Quality Dimensions Results */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl">IV. Service Quality Dimensions (SQD) Results</CardTitle>
+            <CardDescription>
+              Assessment across 9 service quality dimensions using % Favorable scoring (Agree + Strongly Agree)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Overall SQD Summary */}
+            <div className={`p-4 rounded-lg border mb-6 ${getScoreBgColor(summary.overallSQD)}`}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-sm font-medium">Overall Average Score</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(summary.overallSQD)}`}>
+                    {summary.overallSQD.toFixed(2)}%
+                  </div>
+                </div>
+                <span className={`px-3 py-1 rounded text-sm ${getInterpretationBadge(summary.overallSQDInterpretation)}`}>
+                  {summary.overallSQDInterpretation} Service Quality
+                </span>
+              </div>
+            </div>
+
+            {/* SQD Breakdown Table */}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>SQD Code</TableHead>
+                    <TableHead>Dimension</TableHead>
+                    <TableHead className="max-w-xs">Sample Question</TableHead>
+                    <TableHead className="text-right">Score</TableHead>
+                    <TableHead>Interpretation</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {summary.sqdByDimension.map((sqd, index) => (
+                    <TableRow key={index} className={sqd.score < 70 ? "bg-red-50 dark:bg-red-900/10" : ""}>
+                      <TableCell className="font-medium">{sqd.code}</TableCell>
+                      <TableCell>{sqd.dimension}</TableCell>
+                      <TableCell className="max-w-xs text-sm text-muted-foreground">
+                        {SQD_LABELS[sqd.code.toLowerCase()]?.question}
+                      </TableCell>
+                      <TableCell className={`text-right font-bold ${getScoreColor(sqd.score)}`}>
+                        {sqd.score.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-0.5 rounded text-xs ${getInterpretationBadge(sqd.interpretation)}`}>
+                          {sqd.interpretation}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Interpretation Legend */}
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <h5 className="font-semibold mb-3">Interpretation Guide (ARTA Guidelines)</h5>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded ${getInterpretationBadge("Very High")}`}>Very High (90-100)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded ${getInterpretationBadge("High")}`}>High (80-89)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded ${getInterpretationBadge("Moderate")}`}>Moderate (70-79)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded ${getInterpretationBadge("Low")}`}>Low (60-69)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded ${getInterpretationBadge("Very Low")}`}>Very Low (&lt;60)</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* V. Office-Level Results */}
+        {selectedOffice === "All Offices" && officeMetrics.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-2xl">V. Office-Level Results</CardTitle>
+              <CardDescription>
+                Citizen's Charter and SQD scores by office
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* CC Results by Office */}
+              <div className="mb-8">
+                <h4 className="font-semibold mb-4">Citizen's Charter Results by Office</h4>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Office</TableHead>
+                        <TableHead className="text-right">Responses</TableHead>
+                        <TableHead className="text-right">CC1 Awareness</TableHead>
+                        <TableHead>Interpretation</TableHead>
+                        <TableHead className="text-right">CC2 Visibility</TableHead>
+                        <TableHead>Interpretation</TableHead>
+                        <TableHead className="text-right">CC3 Helpfulness</TableHead>
+                        <TableHead>Interpretation</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {officeMetrics.map((office, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{office.office}</TableCell>
+                          <TableCell className="text-right">{office.totalResponses}</TableCell>
+                          <TableCell className={`text-right font-medium ${getScoreColor(office.cc1Score)}`}>
+                            {office.cc1Score.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${getInterpretationBadge(office.cc1Interpretation)}`}>
+                              {office.cc1Interpretation}
+                            </span>
+                          </TableCell>
+                          <TableCell className={`text-right font-medium ${getScoreColor(office.cc2Score)}`}>
+                            {office.cc2Score.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${getInterpretationBadge(office.cc2Interpretation)}`}>
+                              {office.cc2Interpretation}
+                            </span>
+                          </TableCell>
+                          <TableCell className={`text-right font-medium ${getScoreColor(office.cc3Score)}`}>
+                            {office.cc3Score.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${getInterpretationBadge(office.cc3Interpretation)}`}>
+                              {office.cc3Interpretation}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* SQD0 Results by Office */}
+              <div>
+                <h4 className="font-semibold mb-4">SQD0 (Overall Satisfaction) Results by Office</h4>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Office</TableHead>
+                        <TableHead className="text-right">SQD0 Score</TableHead>
+                        <TableHead>Interpretation</TableHead>
+                        <TableHead className="text-right">Overall SQD</TableHead>
+                        <TableHead>Interpretation</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {officeMetrics.map((office, index) => (
+                        <TableRow key={index} className={office.sqdScores.sqd0 < 70 ? "bg-red-50 dark:bg-red-900/10" : ""}>
+                          <TableCell className="font-medium">{office.office}</TableCell>
+                          <TableCell className={`text-right font-medium ${getScoreColor(office.sqdScores.sqd0)}`}>
+                            {office.sqdScores.sqd0.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${getInterpretationBadge(office.sqdInterpretations.sqd0)}`}>
+                              {office.sqdInterpretations.sqd0}
+                            </span>
+                          </TableCell>
+                          <TableCell className={`text-right font-medium ${getScoreColor(office.overallSQDScore)}`}>
+                            {office.overallSQDScore.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${getInterpretationBadge(office.overallSQDInterpretation)}`}>
+                              {office.overallSQDInterpretation}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* VI. Key Findings & Recommendations */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl">VI. Key Findings & Recommendations</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Positive Findings */}
+            <div>
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                Strengths (Scores ≥80%)
+              </h4>
+              <div className="space-y-2">
+                {summary.sqdByDimension.filter(s => s.score >= 80).length > 0 ? (
+                  summary.sqdByDimension.filter(s => s.score >= 80).map((sqd, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                        {sqd.code}: {sqd.score.toFixed(1)}%
+                      </span>
+                      <span className="text-muted-foreground">{sqd.dimension}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No dimensions currently meet the 80% threshold.</p>
+                )}
+                {summary.overallAwareness >= 80 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                      CC1: {summary.overallAwareness.toFixed(1)}%
+                    </span>
+                    <span className="text-muted-foreground">Citizen's Charter Awareness</span>
+                  </div>
+                )}
+                {summary.overallVisibility >= 80 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                      CC2: {summary.overallVisibility.toFixed(1)}%
+                    </span>
+                    <span className="text-muted-foreground">Citizen's Charter Visibility</span>
+                  </div>
+                )}
+                {summary.overallHelpfulness >= 80 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                      CC3: {summary.overallHelpfulness.toFixed(1)}%
+                    </span>
+                    <span className="text-muted-foreground">Citizen's Charter Helpfulness</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Areas for Improvement */}
+            <div>
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-red-600" />
+                Areas for Improvement (Scores &lt;70%)
+              </h4>
+              {summary.problemAreas.length > 0 ? (
+                <div className="space-y-3">
+                  {summary.problemAreas.map((area, idx) => (
+                    <div key={idx} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-red-800 dark:text-red-200">{area.area}</span>
+                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-sm">
+                          {area.score.toFixed(1)}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-red-700 dark:text-red-300">
+                        {area.type === "SQD" 
+                          ? "Clients rated this service dimension below acceptable levels. Review and improve service delivery processes."
+                          : "The Citizen's Charter effectiveness in this area needs immediate attention."}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-green-600">
+                  Excellent! All dimensions are above the 70% threshold.
+                </p>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* General Recommendations */}
+            <div>
+              <h4 className="font-semibold mb-3">General Recommendations</h4>
+              <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                <li>Continue monitoring and maintaining strong performance in dimensions scoring above 90%.</li>
+                <li>Focus improvement efforts on dimensions scoring below 80%, particularly those in the "Low" or "Very Low" categories.</li>
+                <li>Conduct targeted interventions for offices showing consistently lower scores.</li>
+                <li>Enhance Citizen's Charter visibility through digital displays and strategic placement.</li>
+                <li>Regular staff training on service quality standards and client interaction.</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Report Footer */}
+        <div className="text-center text-sm text-muted-foreground py-4">
+          <p>Report generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
+          <p className="mt-1">Based on ARTA Memorandum Circular No. 2022-05 Guidelines</p>
         </div>
       </main>
     </div>
