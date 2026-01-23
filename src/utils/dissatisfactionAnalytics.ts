@@ -1,6 +1,20 @@
 import { FormData } from "@/types/form";
+import { 
+  getInterpretation, 
+  getScoreColor, 
+  SQD_LABELS, 
+  calculateSQDFavorableScore,
+  calculateCC1AwarenessScore,
+  calculateCC2VisibilityScore,
+  calculateCC3HelpfulnessScore,
+} from "@/utils/artaScoring";
 
-// SQD Descriptions
+// ============================================
+// ARTA-Compliant Dissatisfaction Analysis
+// Focuses on areas scoring below acceptable levels
+// ============================================
+
+// SQD Descriptions (for legacy compatibility)
 const SQD_DESCRIPTIONS: Record<string, string> = {
   sqd0: "I am satisfied with the service I availed",
   sqd1: "I spent a reasonable amount of time for my transaction",
@@ -22,6 +36,10 @@ export interface DissatisfactionSummary {
   officeWithMostIssues: string;
   totalNegativeRatings: number;
   totalNeutralRatings: number;
+  // ARTA-specific metrics
+  lowestSQDScore: number;
+  lowestSQDDimension: string;
+  dimensionsBelowThreshold: number;
 }
 
 export interface SQDDissatisfactionRow {
@@ -30,11 +48,16 @@ export interface SQDDissatisfactionRow {
   stronglyDisagree: number;
   disagree: number;
   neither: number;
+  agree: number;
+  stronglyAgree: number;
   totalNegative: number;
   negativePercentage: string;
+  favorableScore: number;
+  favorablePercentage: string;
+  interpretation: string;
+  validResponses: number;
   totalNeutralNegative: number;
   neutralNegativePercentage: string;
-  validResponses: number;
 }
 
 export interface OfficeDissatisfactionRow {
@@ -43,7 +66,8 @@ export interface OfficeDissatisfactionRow {
   totalResponses: number;
   dissatisfiedResponses: number;
   dissatisfactionRate: string;
-  avgNegativeRating: string;
+  overallSQDScore: number;
+  interpretation: string;
   topIssues: string[];
   commentsCount: number;
 }
@@ -54,6 +78,8 @@ export interface CCIssuesRow {
   count: number;
   percentage: string;
   affectedOffices: string[];
+  score: number;
+  interpretation: string;
 }
 
 export interface CommentAnalysis {
@@ -73,6 +99,8 @@ export interface DemographicDissatisfaction {
   totalResponses: number;
   dissatisfiedCount: number;
   dissatisfactionRate: string;
+  overallSQDScore: number;
+  interpretation: string;
 }
 
 export interface TrendData {
@@ -80,6 +108,7 @@ export interface TrendData {
   totalResponses: number;
   dissatisfiedResponses: number;
   dissatisfactionRate: string;
+  overallSQDScore: number;
 }
 
 // Helper: Check if response is negative (D or SD)
@@ -106,7 +135,16 @@ const getProblematicDimensions = (row: FormData): string[] => {
     .map(field => field.toUpperCase());
 };
 
-// Generate Summary
+// Calculate overall SQD score for a subset of data
+const calculateOverallSQD = (data: FormData[]): number => {
+  const sqdFields = ["sqd0", "sqd1", "sqd2", "sqd3", "sqd4", "sqd5", "sqd6", "sqd7", "sqd8"];
+  const scores = sqdFields.map(field => calculateSQDFavorableScore(data, field));
+  const validScores = scores.filter(s => s > 0);
+  if (validScores.length === 0) return 0;
+  return validScores.reduce((sum, s) => sum + s, 0) / validScores.length;
+};
+
+// Generate Summary with ARTA metrics
 export function generateDissatisfactionSummary(data: FormData[]): DissatisfactionSummary {
   if (data.length === 0) {
     return {
@@ -117,26 +155,26 @@ export function generateDissatisfactionSummary(data: FormData[]): Dissatisfactio
       officeWithMostIssues: "N/A",
       totalNegativeRatings: 0,
       totalNeutralRatings: 0,
+      lowestSQDScore: 0,
+      lowestSQDDimension: "N/A",
+      dimensionsBelowThreshold: 0,
     };
   }
 
   const dissatisfiedResponses = data.filter(hasDissatisfaction);
   
-  // Count negative ratings per dimension
-  const dimensionCounts: Record<string, number> = {};
+  // Count negative and neutral ratings
   const sqdFields = ["sqd0", "sqd1", "sqd2", "sqd3", "sqd4", "sqd5", "sqd6", "sqd7", "sqd8"] as const;
-  
   let totalNegative = 0;
   let totalNeutral = 0;
   
-  sqdFields.forEach(field => {
-    dimensionCounts[field] = 0;
-  });
+  const dimensionNegativeCounts: Record<string, number> = {};
+  sqdFields.forEach(field => dimensionNegativeCounts[field] = 0);
   
   data.forEach(row => {
     sqdFields.forEach(field => {
       if (isNegative(row[field])) {
-        dimensionCounts[field]++;
+        dimensionNegativeCounts[field]++;
         totalNegative++;
       }
       if (isNeutral(row[field])) {
@@ -145,17 +183,17 @@ export function generateDissatisfactionSummary(data: FormData[]): Dissatisfactio
     });
   });
   
-  // Find most problematic dimension
-  let maxCount = 0;
+  // Find dimension with most negative responses
+  let maxNegativeCount = 0;
   let worstDimension = "sqd0";
-  Object.entries(dimensionCounts).forEach(([dim, count]) => {
-    if (count > maxCount) {
-      maxCount = count;
+  Object.entries(dimensionNegativeCounts).forEach(([dim, count]) => {
+    if (count > maxNegativeCount) {
+      maxNegativeCount = count;
       worstDimension = dim;
     }
   });
   
-  // Count dissatisfaction by office
+  // Find office with most dissatisfaction
   const officeCounts: Record<string, number> = {};
   dissatisfiedResponses.forEach(row => {
     if (!officeCounts[row.office]) officeCounts[row.office] = 0;
@@ -171,36 +209,55 @@ export function generateDissatisfactionSummary(data: FormData[]): Dissatisfactio
     }
   });
   
+  // ARTA-specific: Calculate SQD scores and find lowest
+  const sqdScores = sqdFields.map(field => ({
+    field,
+    score: calculateSQDFavorableScore(data, field),
+  }));
+  
+  const lowestSQD = sqdScores.reduce((min, curr) => 
+    curr.score < min.score ? curr : min
+  , sqdScores[0]);
+  
+  const dimensionsBelowThreshold = sqdScores.filter(s => s.score < 70).length;
+  
   return {
     totalResponses: data.length,
     totalDissatisfied: dissatisfiedResponses.length,
     dissatisfactionRate: ((dissatisfiedResponses.length / data.length) * 100).toFixed(2),
-    mostProblematicDimension: `${worstDimension.toUpperCase()} (${maxCount} issues)`,
+    mostProblematicDimension: `${worstDimension.toUpperCase()} (${maxNegativeCount} negative)`,
     officeWithMostIssues: worstOffice !== "N/A" ? `${worstOffice} (${maxOfficeCount} cases)` : "N/A",
     totalNegativeRatings: totalNegative,
     totalNeutralRatings: totalNeutral,
+    lowestSQDScore: lowestSQD.score,
+    lowestSQDDimension: `${lowestSQD.field.toUpperCase()} - ${SQD_LABELS[lowestSQD.field]?.dimension || ""}`,
+    dimensionsBelowThreshold,
   };
 }
 
-// Generate SQD Dissatisfaction Table
+// Generate SQD Dissatisfaction Table with ARTA scoring
 export function generateSQDDissatisfactionTable(data: FormData[]): SQDDissatisfactionRow[] {
   const sqdFields = ["sqd0", "sqd1", "sqd2", "sqd3", "sqd4", "sqd5", "sqd6", "sqd7", "sqd8"] as const;
   
   const rows: SQDDissatisfactionRow[] = sqdFields.map(field => {
-    let sd = 0, d = 0, nd = 0, valid = 0;
+    let sd = 0, d = 0, nd = 0, a = 0, sa = 0, valid = 0;
     
     data.forEach(row => {
       const value = row[field];
-      if (value && value !== "NA") { // NA = Not Applicable
+      if (value && value !== "NA") {
         valid++;
         if (value === "SD") sd++;
         else if (value === "D") d++;
         else if (value === "ND") nd++;
+        else if (value === "A") a++;
+        else if (value === "SA") sa++;
       }
     });
     
     const totalNegative = sd + d;
     const totalNeutralNegative = sd + d + nd;
+    const favorable = a + sa;
+    const favorableScore = valid > 0 ? (favorable / valid) * 100 : 0;
     
     return {
       dimension: field.toUpperCase(),
@@ -208,19 +265,24 @@ export function generateSQDDissatisfactionTable(data: FormData[]): SQDDissatisfa
       stronglyDisagree: sd,
       disagree: d,
       neither: nd,
+      agree: a,
+      stronglyAgree: sa,
       totalNegative,
       negativePercentage: valid > 0 ? ((totalNegative / valid) * 100).toFixed(2) : "0.00",
+      favorableScore,
+      favorablePercentage: valid > 0 ? favorableScore.toFixed(2) : "0.00",
+      interpretation: getInterpretation(favorableScore),
       totalNeutralNegative,
       neutralNegativePercentage: valid > 0 ? ((totalNeutralNegative / valid) * 100).toFixed(2) : "0.00",
       validResponses: valid,
     };
   });
   
-  // Sort by negative percentage (worst first)
-  return rows.sort((a, b) => parseFloat(b.negativePercentage) - parseFloat(a.negativePercentage));
+  // Sort by favorable score (lowest first - worst performing)
+  return rows.sort((a, b) => a.favorableScore - b.favorableScore);
 }
 
-// Generate Office Dissatisfaction Table
+// Generate Office Dissatisfaction Table with ARTA metrics
 export function generateOfficeDissatisfactionTable(data: FormData[]): OfficeDissatisfactionRow[] {
   const officeMap: Record<string, FormData[]> = {};
   
@@ -233,7 +295,10 @@ export function generateOfficeDissatisfactionTable(data: FormData[]): OfficeDiss
     const dissatisfied = records.filter(hasDissatisfaction);
     const commentsCount = records.filter(r => r.comments && r.comments.trim() !== "").length;
     
-    // Find top issues for this office
+    // Calculate overall SQD score for this office
+    const overallSQDScore = calculateOverallSQD(records);
+    
+    // Find top issues (dimensions with most negative responses)
     const issueCounts: Record<string, number> = {};
     const sqdFields = ["sqd0", "sqd1", "sqd2", "sqd3", "sqd4", "sqd5", "sqd6", "sqd7", "sqd8"] as const;
     
@@ -249,17 +314,8 @@ export function generateOfficeDissatisfactionTable(data: FormData[]): OfficeDiss
     const topIssues = Object.entries(issueCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
+      .filter(([_, count]) => count > 0)
       .map(([field]) => field.toUpperCase());
-    
-    // Calculate count of negative responses
-    let negativeCount = 0;
-    dissatisfied.forEach(row => {
-      sqdFields.forEach(field => {
-        if (row[field] === "D" || row[field] === "SD") {
-          negativeCount++;
-        }
-      });
-    });
     
     const campus = records[0]?.campus || "";
     
@@ -269,19 +325,25 @@ export function generateOfficeDissatisfactionTable(data: FormData[]): OfficeDiss
       totalResponses: records.length,
       dissatisfiedResponses: dissatisfied.length,
       dissatisfactionRate: ((dissatisfied.length / records.length) * 100).toFixed(2),
-      avgNegativeRating: negativeCount > 0 ? `${negativeCount} ratings` : "N/A",
+      overallSQDScore,
+      interpretation: getInterpretation(overallSQDScore),
       topIssues,
       commentsCount,
     };
   });
   
-  // Sort by dissatisfaction rate (worst first)
-  return rows.sort((a, b) => parseFloat(b.dissatisfactionRate) - parseFloat(a.dissatisfactionRate));
+  // Sort by SQD score (lowest first - worst performing)
+  return rows.sort((a, b) => a.overallSQDScore - b.overallSQDScore);
 }
 
-// Generate CC Issues Analysis
+// Generate CC Issues Analysis with ARTA scoring
 export function generateCCIssuesAnalysis(data: FormData[]): CCIssuesRow[] {
   const issues: CCIssuesRow[] = [];
+  
+  // Calculate CC scores using ARTA methodology
+  const cc1Score = calculateCC1AwarenessScore(data);
+  const cc2Score = calculateCC2VisibilityScore(data);
+  const cc3Score = calculateCC3HelpfulnessScore(data);
   
   // CC2: Visibility issues (3 = Difficult to see, 4 = Not visible at all)
   const cc2Difficult = data.filter(d => d.cc2 === "3");
@@ -294,9 +356,48 @@ export function generateCCIssuesAnalysis(data: FormData[]): CCIssuesRow[] {
   const cc1Unknown = data.filter(d => d.cc1 === "4" || d.cc1 === "5");
   
   const getAffectedOffices = (records: FormData[]): string[] => {
-    return Array.from(new Set(records.map(r => r.office))).slice(0, 5);
+    return Array.from(new Set(records.map(r => r.office))).filter(Boolean).slice(0, 5);
   };
   
+  // Add overall CC scores as issues if below threshold
+  if (cc1Score < 80) {
+    issues.push({
+      category: "CC1 - Awareness",
+      issue: `Overall awareness score is ${cc1Score.toFixed(1)}%`,
+      count: cc1Unknown.length,
+      percentage: ((cc1Unknown.length / data.length) * 100).toFixed(2),
+      affectedOffices: getAffectedOffices(cc1Unknown),
+      score: cc1Score,
+      interpretation: getInterpretation(cc1Score),
+    });
+  }
+  
+  if (cc2Score < 80) {
+    const cc2Issues = [...cc2Difficult, ...cc2NotVisible];
+    issues.push({
+      category: "CC2 - Visibility",
+      issue: `Overall visibility score is ${cc2Score.toFixed(1)}%`,
+      count: cc2Issues.length,
+      percentage: ((cc2Issues.length / data.length) * 100).toFixed(2),
+      affectedOffices: getAffectedOffices(cc2Issues),
+      score: cc2Score,
+      interpretation: getInterpretation(cc2Score),
+    });
+  }
+  
+  if (cc3Score < 80) {
+    issues.push({
+      category: "CC3 - Helpfulness",
+      issue: `Overall helpfulness score is ${cc3Score.toFixed(1)}%`,
+      count: cc3NotHelp.length,
+      percentage: ((cc3NotHelp.length / data.length) * 100).toFixed(2),
+      affectedOffices: getAffectedOffices(cc3NotHelp),
+      score: cc3Score,
+      interpretation: getInterpretation(cc3Score),
+    });
+  }
+  
+  // Add specific visibility issues
   if (cc2Difficult.length > 0) {
     issues.push({
       category: "CC2 - Visibility",
@@ -304,6 +405,8 @@ export function generateCCIssuesAnalysis(data: FormData[]): CCIssuesRow[] {
       count: cc2Difficult.length,
       percentage: ((cc2Difficult.length / data.length) * 100).toFixed(2),
       affectedOffices: getAffectedOffices(cc2Difficult),
+      score: cc2Score,
+      interpretation: getInterpretation(cc2Score),
     });
   }
   
@@ -314,6 +417,8 @@ export function generateCCIssuesAnalysis(data: FormData[]): CCIssuesRow[] {
       count: cc2NotVisible.length,
       percentage: ((cc2NotVisible.length / data.length) * 100).toFixed(2),
       affectedOffices: getAffectedOffices(cc2NotVisible),
+      score: cc2Score,
+      interpretation: getInterpretation(cc2Score),
     });
   }
   
@@ -324,21 +429,13 @@ export function generateCCIssuesAnalysis(data: FormData[]): CCIssuesRow[] {
       count: cc3NotHelp.length,
       percentage: ((cc3NotHelp.length / data.length) * 100).toFixed(2),
       affectedOffices: getAffectedOffices(cc3NotHelp),
+      score: cc3Score,
+      interpretation: getInterpretation(cc3Score),
     });
   }
   
-  if (cc1Unknown.length > 0) {
-    issues.push({
-      category: "CC1 - Awareness",
-      issue: "Client does not know about Citizen's Charter",
-      count: cc1Unknown.length,
-      percentage: ((cc1Unknown.length / data.length) * 100).toFixed(2),
-      affectedOffices: getAffectedOffices(cc1Unknown),
-    });
-  }
-  
-  // Sort by count (most issues first)
-  return issues.sort((a, b) => b.count - a.count);
+  // Sort by score (lowest first)
+  return issues.sort((a, b) => a.score - b.score);
 }
 
 // Generate Comments List
@@ -363,7 +460,7 @@ export function generateCommentsList(data: FormData[]): CommentAnalysis[] {
     });
 }
 
-// Generate Demographic Dissatisfaction
+// Generate Demographic Dissatisfaction with ARTA metrics
 export function generateDemographicDissatisfaction(data: FormData[]): {
   byAgeGroup: DemographicDissatisfaction[];
   bySex: DemographicDissatisfaction[];
@@ -373,26 +470,32 @@ export function generateDemographicDissatisfaction(data: FormData[]): {
     category: string,
     getValue: (row: FormData) => string
   ): DemographicDissatisfaction[] => {
-    const groups: Record<string, { total: number; dissatisfied: number }> = {};
+    const groups: Record<string, FormData[]> = {};
     
     data.forEach(row => {
       const value = getValue(row) || "Unknown";
-      if (!groups[value]) groups[value] = { total: 0, dissatisfied: 0 };
-      groups[value].total++;
-      if (hasDissatisfaction(row)) groups[value].dissatisfied++;
+      if (!groups[value]) groups[value] = [];
+      groups[value].push(row);
     });
     
     return Object.entries(groups)
-      .map(([value, counts]) => ({
-        category,
-        value,
-        totalResponses: counts.total,
-        dissatisfiedCount: counts.dissatisfied,
-        dissatisfactionRate: counts.total > 0 
-          ? ((counts.dissatisfied / counts.total) * 100).toFixed(2) 
-          : "0.00",
-      }))
-      .sort((a, b) => parseFloat(b.dissatisfactionRate) - parseFloat(a.dissatisfactionRate));
+      .map(([value, records]) => {
+        const dissatisfiedCount = records.filter(hasDissatisfaction).length;
+        const overallSQDScore = calculateOverallSQD(records);
+        
+        return {
+          category,
+          value,
+          totalResponses: records.length,
+          dissatisfiedCount,
+          dissatisfactionRate: records.length > 0 
+            ? ((dissatisfiedCount / records.length) * 100).toFixed(2) 
+            : "0.00",
+          overallSQDScore,
+          interpretation: getInterpretation(overallSQDScore),
+        };
+      })
+      .sort((a, b) => a.overallSQDScore - b.overallSQDScore); // Sort by SQD score (worst first)
   };
   
   return {
@@ -402,26 +505,30 @@ export function generateDemographicDissatisfaction(data: FormData[]): {
   };
 }
 
-// Generate Trend Data
+// Generate Trend Data with ARTA metrics
 export function generateDissatisfactionTrends(data: FormData[]): TrendData[] {
-  const dateMap: Record<string, { total: number; dissatisfied: number }> = {};
+  const dateMap: Record<string, FormData[]> = {};
   
   data.forEach(row => {
-    // Extract date from timestamp (assuming format includes date)
     const date = row.timestamp.split(" ")[0] || row.timestamp.split("T")[0];
-    if (!dateMap[date]) dateMap[date] = { total: 0, dissatisfied: 0 };
-    dateMap[date].total++;
-    if (hasDissatisfaction(row)) dateMap[date].dissatisfied++;
+    if (!dateMap[date]) dateMap[date] = [];
+    dateMap[date].push(row);
   });
   
   return Object.entries(dateMap)
-    .map(([date, counts]) => ({
-      date,
-      totalResponses: counts.total,
-      dissatisfiedResponses: counts.dissatisfied,
-      dissatisfactionRate: counts.total > 0 
-        ? ((counts.dissatisfied / counts.total) * 100).toFixed(2)
-        : "0.00",
-    }))
+    .map(([date, records]) => {
+      const dissatisfiedCount = records.filter(hasDissatisfaction).length;
+      const overallSQDScore = calculateOverallSQD(records);
+      
+      return {
+        date,
+        totalResponses: records.length,
+        dissatisfiedResponses: dissatisfiedCount,
+        dissatisfactionRate: records.length > 0 
+          ? ((dissatisfiedCount / records.length) * 100).toFixed(2)
+          : "0.00",
+        overallSQDScore,
+      };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 }

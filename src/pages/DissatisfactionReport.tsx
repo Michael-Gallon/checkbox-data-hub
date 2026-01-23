@@ -22,6 +22,7 @@ import {
   type DemographicDissatisfaction,
   type TrendData,
 } from "@/utils/dissatisfactionAnalytics";
+import { getScoreColor, getInterpretation } from "@/utils/artaScoring";
 
 const DissatisfactionReport = () => {
   const navigate = useNavigate();
