@@ -639,17 +639,33 @@ const DissatisfactionReport = () => {
               <MessageSquare className="w-5 h-5 text-blue-500" />
               Comments & Suggestions ({comments.length})
             </CardTitle>
-            <CardDescription>
-              Client feedback sorted by importance (dissatisfied first)
+            <CardDescription className="flex flex-wrap items-center gap-2">
+              <span>Client feedback sorted by importance (dissatisfied first)</span>
+              {(selectedCampus !== "All Campuses" || selectedOffice !== "All Offices") && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="text-muted-foreground">—</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedCampus !== "All Campuses" && selectedCampus}
+                    {selectedCampus !== "All Campuses" && selectedOffice !== "All Offices" && " / "}
+                    {selectedOffice !== "All Offices" && selectedOffice}
+                  </Badge>
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {comments.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No comments available.</p>
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground">No comments available for the selected filter.</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Try selecting a different campus or office, or view all data.
+                </p>
+              </div>
             ) : (
               <>
                 {/* Filter Toggle */}
-                <div className="flex gap-2 mb-4 print:hidden">
+                <div className="flex flex-wrap gap-2 mb-4 print:hidden">
                   <Button 
                     variant={!showOnlyDissatisfied ? "default" : "outline"} 
                     size="sm"
@@ -666,6 +682,20 @@ const DissatisfactionReport = () => {
                     <Filter className="w-3 h-3 mr-1" />
                     Dissatisfied Only ({comments.filter(c => c.hasDissatisfaction).length})
                   </Button>
+                  
+                  {/* Quick filter info */}
+                  {(selectedCampus !== "All Campuses" || selectedOffice !== "All Offices") && (
+                    <div className="flex items-center gap-2 ml-auto text-sm text-muted-foreground">
+                      <Filter className="w-3 h-3" />
+                      <span>Filtered by:</span>
+                      {selectedCampus !== "All Campuses" && (
+                        <Badge variant="outline" className="text-xs">{selectedCampus}</Badge>
+                      )}
+                      {selectedOffice !== "All Offices" && (
+                        <Badge variant="outline" className="text-xs">{selectedOffice}</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Comments Grid */}
@@ -681,9 +711,12 @@ const DissatisfactionReport = () => {
                     >
                       {/* Header */}
                       <div className="flex flex-wrap items-center gap-2 mb-2 text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">{comment.office}</span>
-                        <span>•</span>
-                        <span>{comment.campus}</span>
+                        <Badge variant="outline" className="font-medium text-foreground bg-background">
+                          {comment.office}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {comment.campus}
+                        </Badge>
                         <span>•</span>
                         <span>Client: {comment.clientType}</span>
                         <span>•</span>
