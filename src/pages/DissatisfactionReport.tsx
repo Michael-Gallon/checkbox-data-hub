@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, BarChart3, Table2, AlertTriangle, AlertCircle, MessageSquare } from "lucide-react";
+import { ArrowLeft, Download, BarChart3, Table2, AlertTriangle, AlertCircle, MessageSquare, Filter, TrendingDown, Lightbulb } from "lucide-react";
 import { FormData } from "@/types/form";
 import {
   generateDissatisfactionSummary,
@@ -45,6 +46,7 @@ const DissatisfactionReport = () => {
     byClientType: DemographicDissatisfaction[];
   }>({ byAgeGroup: [], bySex: [], byClientType: [] });
   const [trends, setTrends] = useState<TrendData[]>([]);
+  const [showOnlyDissatisfied, setShowOnlyDissatisfied] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("encodedData");
@@ -199,7 +201,7 @@ const DissatisfactionReport = () => {
           </CardContent>
         </Card>
 
-        {/* Summary Cards */}
+        {/* Summary Cards with ARTA Interpretation */}
         {summary && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card className="border-l-4 border-l-red-500">
@@ -209,6 +211,9 @@ const DissatisfactionReport = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">out of {summary.totalResponses} total</p>
+                <Badge variant="outline" className="mt-2 bg-red-50 text-red-700 border-red-200">
+                  {getInterpretation(100 - parseFloat(summary.dissatisfactionRate))} Favorable
+                </Badge>
               </CardContent>
             </Card>
 
@@ -223,6 +228,9 @@ const DissatisfactionReport = () => {
                 <p className="text-sm text-muted-foreground">
                   {summary.totalNegativeRatings} negative + {summary.totalNeutralRatings} neutral ratings
                 </p>
+                <Badge variant="outline" className={`mt-2 ${getScoreColor(100 - parseFloat(summary.dissatisfactionRate))}`}>
+                  {(100 - parseFloat(summary.dissatisfactionRate)).toFixed(1)}% Favorable
+                </Badge>
               </CardContent>
             </Card>
 
@@ -233,6 +241,9 @@ const DissatisfactionReport = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">Needs attention</p>
+                <Badge variant="outline" className="mt-2 bg-yellow-50 text-yellow-700 border-yellow-200">
+                  <TrendingDown className="w-3 h-3 mr-1" /> Priority Focus
+                </Badge>
               </CardContent>
             </Card>
 
@@ -243,12 +254,78 @@ const DissatisfactionReport = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">Highest dissatisfaction</p>
+                <Badge variant="outline" className="mt-2 bg-purple-50 text-purple-700 border-purple-200">
+                  Requires Review
+                </Badge>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Table 1: SQD Dissatisfaction Analysis */}
+        {/* Key Findings Section */}
+        {summary && sqdTable.length > 0 && (
+          <Card className="mb-8 border-l-4 border-l-blue-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-blue-500" />
+                Key Findings & Recommendations
+              </CardTitle>
+              <CardDescription>
+                Areas requiring immediate attention based on ARTA methodology
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-red-600 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Dimensions Needing Improvement
+                  </h4>
+                  <ul className="space-y-2">
+                    {sqdTable
+                      .filter(row => parseFloat(row.negativePercentage) >= 10)
+                      .slice(0, 5)
+                      .map((row, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-sm">
+                          <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                            {row.dimension}
+                          </span>
+                          <span className="text-muted-foreground">{row.negativePercentage}% negative</span>
+                        </li>
+                      ))}
+                    {sqdTable.filter(row => parseFloat(row.negativePercentage) >= 10).length === 0 && (
+                      <li className="text-green-600 text-sm">All dimensions performing well (&lt;10% negative)</li>
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-orange-600 mb-2 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Offices Requiring Attention
+                  </h4>
+                  <ul className="space-y-2">
+                    {officeTable
+                      .filter(row => parseFloat(row.dissatisfactionRate) >= 10)
+                      .slice(0, 5)
+                      .map((row, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-sm">
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium truncate max-w-[150px]">
+                            {row.office}
+                          </span>
+                          <span className="text-muted-foreground">{row.dissatisfactionRate}% dissatisfied</span>
+                        </li>
+                      ))}
+                    {officeTable.filter(row => parseFloat(row.dissatisfactionRate) >= 10).length === 0 && (
+                      <li className="text-green-600 text-sm">All offices performing well (&lt;10% dissatisfied)</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Table 1: SQD Dissatisfaction Analysis with ARTA Interpretation */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -256,7 +333,7 @@ const DissatisfactionReport = () => {
               Table 1: SQD Dissatisfaction Analysis
             </CardTitle>
             <CardDescription>
-              Detailed breakdown of negative and neutral responses by service quality dimension (sorted by worst performing)
+              Detailed breakdown by service quality dimension with ARTA interpretation levels
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -269,34 +346,42 @@ const DissatisfactionReport = () => {
                     <TableHead className="text-right">SD</TableHead>
                     <TableHead className="text-right">D</TableHead>
                     <TableHead className="text-right">ND</TableHead>
-                    <TableHead className="text-right">Negative (SD+D)</TableHead>
                     <TableHead className="text-right">Negative %</TableHead>
-                    <TableHead className="text-right">Neutral+Negative %</TableHead>
+                    <TableHead className="text-right">Favorable %</TableHead>
+                    <TableHead className="text-center">Interpretation</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sqdTable.map((row, index) => (
-                    <TableRow key={index} className={parseFloat(row.negativePercentage) >= 20 ? "bg-red-50 dark:bg-red-900/10" : ""}>
-                      <TableCell className="font-medium">{row.dimension}</TableCell>
-                      <TableCell className="max-w-xs truncate">{row.description}</TableCell>
-                      <TableCell className="text-right text-red-600 dark:text-red-400">{row.stronglyDisagree}</TableCell>
-                      <TableCell className="text-right text-orange-600 dark:text-orange-400">{row.disagree}</TableCell>
-                      <TableCell className="text-right text-yellow-600 dark:text-yellow-400">{row.neither}</TableCell>
-                      <TableCell className="text-right font-semibold">{row.totalNegative}</TableCell>
-                      <TableCell className={`text-right font-semibold ${getSeverityTextColor(row.negativePercentage)}`}>
-                        {row.negativePercentage}%
-                      </TableCell>
-                      <TableCell className={`text-right ${getSeverityTextColor(row.neutralNegativePercentage)}`}>
-                        {row.neutralNegativePercentage}%
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {sqdTable.map((row, index) => {
+                    const favorablePercent = 100 - parseFloat(row.neutralNegativePercentage);
+                    const interpretation = getInterpretation(favorablePercent);
+                    return (
+                      <TableRow key={index} className={parseFloat(row.negativePercentage) >= 20 ? "bg-red-50 dark:bg-red-900/10" : ""}>
+                        <TableCell className="font-medium">{row.dimension}</TableCell>
+                        <TableCell className="max-w-xs truncate">{row.description}</TableCell>
+                        <TableCell className="text-right text-red-600 dark:text-red-400">{row.stronglyDisagree}</TableCell>
+                        <TableCell className="text-right text-orange-600 dark:text-orange-400">{row.disagree}</TableCell>
+                        <TableCell className="text-right text-yellow-600 dark:text-yellow-400">{row.neither}</TableCell>
+                        <TableCell className={`text-right font-semibold ${getSeverityTextColor(row.negativePercentage)}`}>
+                          {row.negativePercentage}%
+                        </TableCell>
+                        <TableCell className={`text-right font-semibold ${getScoreColor(favorablePercent)}`}>
+                          {favorablePercent.toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className={getScoreColor(favorablePercent)}>
+                            {interpretation}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
-              <strong>Legend:</strong> SD = Strongly Disagree (1), D = Disagree (2), ND = Neither Agree nor Disagree (3). 
-              Red highlighting indicates ≥20% negative responses.
+              <strong>Legend:</strong> SD = Strongly Disagree, D = Disagree, ND = Neither Agree nor Disagree. 
+              <strong> ARTA Levels:</strong> Very High (≥90%), High (80-89%), Moderate (70-79%), Low (60-69%), Very Low (&lt;60%).
             </p>
           </CardContent>
         </Card>
@@ -547,61 +632,91 @@ const DissatisfactionReport = () => {
           </Card>
         )}
 
-        {/* Table 6: All Comments/Suggestions */}
+        {/* Comments & Suggestions - Card Layout */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-blue-500" />
-              Table 6: All Comments and Suggestions ({comments.length})
+              Comments & Suggestions ({comments.length})
             </CardTitle>
             <CardDescription>
-              Complete feedback with dissatisfied responses highlighted first
+              Client feedback sorted by importance (dissatisfied first)
             </CardDescription>
           </CardHeader>
           <CardContent>
             {comments.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No comments available.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Timestamp</TableHead>
-                      <TableHead>Office</TableHead>
-                      <TableHead>Client Type</TableHead>
-                      <TableHead>Doc #</TableHead>
-                      <TableHead>Comment</TableHead>
-                      <TableHead>Issues</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {comments.map((row, index) => (
-                      <TableRow key={index} className={row.hasDissatisfaction ? "bg-red-50 dark:bg-red-900/10" : ""}>
-                        <TableCell className="text-xs whitespace-nowrap">{row.timestamp}</TableCell>
-                        <TableCell className="max-w-[150px] truncate">{row.office}</TableCell>
-                        <TableCell>{row.clientType}</TableCell>
-                        <TableCell>{row.documentNumber || "-"}</TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="line-clamp-3">{row.comment}</div>
-                        </TableCell>
-                        <TableCell>
-                          {row.hasDissatisfaction ? (
-                            <div className="flex gap-1 flex-wrap">
-                              {row.problematicDimensions.map((dim, i) => (
-                                <span key={i} className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-xs">
-                                  {dim}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-green-600 text-xs">None</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <>
+                {/* Filter Toggle */}
+                <div className="flex gap-2 mb-4 print:hidden">
+                  <Button 
+                    variant={!showOnlyDissatisfied ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => setShowOnlyDissatisfied(false)}
+                  >
+                    Show All ({comments.length})
+                  </Button>
+                  <Button 
+                    variant={showOnlyDissatisfied ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => setShowOnlyDissatisfied(true)}
+                    className={showOnlyDissatisfied ? "bg-red-600 hover:bg-red-700" : ""}
+                  >
+                    <Filter className="w-3 h-3 mr-1" />
+                    Dissatisfied Only ({comments.filter(c => c.hasDissatisfaction).length})
+                  </Button>
+                </div>
+
+                {/* Comments Grid */}
+                <div className="space-y-4 max-h-[600px] overflow-y-auto print:max-h-none print:overflow-visible">
+                  {(showOnlyDissatisfied ? comments.filter(c => c.hasDissatisfaction) : comments).map((comment, index) => (
+                    <div 
+                      key={index}
+                      className={`p-4 rounded-lg border-l-4 ${
+                        comment.hasDissatisfaction 
+                          ? 'border-l-red-500 bg-red-50 dark:bg-red-900/10' 
+                          : 'border-l-green-500 bg-green-50 dark:bg-green-900/10'
+                      }`}
+                    >
+                      {/* Header */}
+                      <div className="flex flex-wrap items-center gap-2 mb-2 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">{comment.office}</span>
+                        <span>•</span>
+                        <span>{comment.campus}</span>
+                        <span>•</span>
+                        <span>Client: {comment.clientType}</span>
+                        <span>•</span>
+                        <span>{comment.timestamp}</span>
+                        {comment.documentNumber && (
+                          <>
+                            <span>•</span>
+                            <span className="text-xs bg-muted px-2 py-0.5 rounded">Doc #{comment.documentNumber}</span>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Comment Text */}
+                      <p className="text-foreground mb-3 whitespace-pre-wrap">{comment.comment}</p>
+                      
+                      {/* Issue Badges */}
+                      {comment.hasDissatisfaction && (
+                        <div className="flex gap-1 flex-wrap items-center">
+                          <span className="text-xs text-muted-foreground mr-1">Issues:</span>
+                          {comment.problematicDimensions.map((dim, i) => (
+                            <span 
+                              key={i} 
+                              className="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-xs font-medium"
+                            >
+                              {dim}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
