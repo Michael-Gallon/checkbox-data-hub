@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, Table2, AlertTriangle, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Download, Table2, AlertTriangle, CheckCircle, XCircle, AlertCircle, MessageSquare, Filter } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { FormData } from "@/types/form";
 import {
   calculateSummaryStatistics,
@@ -724,6 +726,112 @@ const Report = () => {
                 <li>Regular staff training on service quality standards and client interaction.</li>
               </ul>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* VII. Comments & Suggestions */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <MessageSquare className="w-6 h-6 text-blue-500" />
+              VII. Comments & Suggestions
+            </CardTitle>
+            <CardDescription className="flex flex-wrap items-center gap-2">
+              <span>Client feedback from respondents</span>
+              {(selectedCampus !== "All Campuses" || selectedOffice !== "All Offices") && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="text-muted-foreground">—</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedCampus !== "All Campuses" && selectedCampus}
+                    {selectedCampus !== "All Campuses" && selectedOffice !== "All Offices" && " / "}
+                    {selectedOffice !== "All Offices" && selectedOffice}
+                  </Badge>
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const comments = filteredData
+                .filter(row => row.comments && row.comments.trim() !== "")
+                .map(row => ({
+                  timestamp: row.timestamp,
+                  campus: row.campus,
+                  office: row.office,
+                  clientType: row.clientType,
+                  documentNumber: row.documentNumber,
+                  comment: row.comments,
+                }))
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+              if (comments.length === 0) {
+                return (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">No comments available for the selected filter.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Try selecting a different campus or office, or view all data.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  <div className="flex flex-wrap items-center gap-2 mb-4 print:hidden">
+                    <Badge variant="outline" className="text-sm">
+                      {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                    </Badge>
+                    {(selectedCampus !== "All Campuses" || selectedOffice !== "All Offices") && (
+                      <div className="flex items-center gap-2 ml-auto text-sm text-muted-foreground">
+                        <Filter className="w-3 h-3" />
+                        <span>Filtered by:</span>
+                        {selectedCampus !== "All Campuses" && (
+                          <Badge variant="outline" className="text-xs">{selectedCampus}</Badge>
+                        )}
+                        {selectedOffice !== "All Offices" && (
+                          <Badge variant="outline" className="text-xs">{selectedOffice}</Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <ScrollArea className="max-h-[500px] print:max-h-none">
+                    <div className="space-y-4">
+                      {comments.map((comment, index) => (
+                        <div 
+                          key={index}
+                          className="p-4 rounded-lg border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/10"
+                        >
+                          {/* Header */}
+                          <div className="flex flex-wrap items-center gap-2 mb-2 text-sm text-muted-foreground">
+                            <Badge variant="outline" className="font-medium text-foreground bg-background">
+                              {comment.office}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {comment.campus}
+                            </Badge>
+                            <span>•</span>
+                            <span>Client: {comment.clientType}</span>
+                            <span>•</span>
+                            <span>{comment.timestamp}</span>
+                            {comment.documentNumber && (
+                              <>
+                                <span>•</span>
+                                <span>Doc #{comment.documentNumber}</span>
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Comment Text */}
+                          <p className="text-foreground">{comment.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
 
