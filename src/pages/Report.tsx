@@ -796,39 +796,37 @@ const Report = () => {
                     )}
                   </div>
 
-                  <ScrollArea className="max-h-[500px] print:max-h-none">
-                    <div className="space-y-4">
-                      {comments.map((comment, index) => (
-                        <div 
-                          key={index}
-                          className="p-4 rounded-lg border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/10"
-                        >
-                          {/* Header */}
-                          <div className="flex flex-wrap items-center gap-2 mb-2 text-sm text-muted-foreground">
-                            <Badge variant="outline" className="font-medium text-foreground bg-background">
-                              {comment.office}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              {comment.campus}
-                            </Badge>
-                            <span>•</span>
-                            <span>Client: {comment.clientType}</span>
-                            <span>•</span>
-                            <span>{comment.timestamp}</span>
-                            {comment.documentNumber && (
-                              <>
-                                <span>•</span>
-                                <span>Doc #{comment.documentNumber}</span>
-                              </>
-                            )}
-                          </div>
-                          
-                          {/* Comment Text */}
-                          <p className="text-foreground">{comment.comment}</p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {comments.map((comment, index) => (
+                      <div 
+                        key={index}
+                        className="p-3 rounded-lg border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/10"
+                      >
+                        {/* Header */}
+                        <div className="flex flex-wrap items-center gap-1 mb-2 text-xs text-muted-foreground">
+                          <Badge variant="outline" className="font-medium text-foreground bg-background text-xs">
+                            {comment.office}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {comment.campus}
+                          </Badge>
+                          <span>•</span>
+                          <span>{comment.clientType}</span>
+                          <span>•</span>
+                          <span>{comment.timestamp}</span>
+                          {comment.documentNumber && (
+                            <>
+                              <span>•</span>
+                              <span>#{comment.documentNumber}</span>
+                            </>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                        
+                        {/* Comment Text */}
+                        <p className="text-sm text-foreground">{comment.comment}</p>
+                      </div>
+                    ))}
+                  </div>
                 </>
               );
             })()}
